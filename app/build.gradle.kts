@@ -29,7 +29,7 @@ android {
 dependencies {
 
     implementation(files(
-        "libs/libv2ray.aar",
+        "libs/libxray.aar",
         "libs/core-release.aar",
         "libs/shadowsocks-release.aar",
         "libs/shadowsocksr-release.aar"

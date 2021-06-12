@@ -4,9 +4,6 @@
 [submodule "library/core/src/main/jni/libancillary"]
 	path = library/core/src/main/jni/libancillary
 	url = https://github.com/shadowsocks/libancillary
-[submodule "library/v2ray"]
-	path = library/v2ray
-	url = https://github.com/SagerNet/AndroidLibV2rayLite
 [submodule "library/shadowsocks/src/main/rust/shadowsocks-rust"]
 	path = library/shadowsocks/src/main/rust/shadowsocks-rust
 	url = https://github.com/shadowsocks/shadowsocks-rust.git
@@ -46,3 +43,6 @@
 [submodule "plugin/brook/src/main/go/brook"]
 	path = plugin/brook/src/main/go/brook
 	url = https://github.com/txthinking/brook
+[submodule "library/xray"]
+	path = library/xray
+	url = https://github.com/nekohasekai/AndroidLibXrayLite

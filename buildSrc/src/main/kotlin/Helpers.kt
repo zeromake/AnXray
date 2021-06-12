@@ -378,8 +378,7 @@ fun Project.setupPlugin(projectName: String) {
 fun Project.setupApp() {
     val pkgName = requireMetadata().getProperty("PACKAGE_NAME")
     val verName = requireMetadata().getProperty("VERSION_NAME")
-    val skip = 40
-    val verCode = (requireMetadata().getProperty("VERSION_CODE").toInt() - skip) * 5 + skip
+    val verCode = (requireMetadata().getProperty("VERSION_CODE").toInt()) * 5
     android.apply {
         defaultConfig {
             applicationId = pkgName
