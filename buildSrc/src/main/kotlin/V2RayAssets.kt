@@ -117,46 +117,4 @@ fun Project.downloadAssets() {
         }
     }
 
-    val v2rayVersion = File(rootDir, "library/v2ray/go.mod").readText()
-        .substringAfter("v2ray-core")
-        .substringAfter(" ")
-        .substringBefore("\n")
-    val coreVersionFile = File(assets, "v2ray/core.version.txt")
-    val cacheFile = File(rootProject.buildDir, "v2ray-extra.zip")
-    cacheFile.parentFile.mkdirs()
-    cacheFile.deleteRecursively()
-
-    if (!coreVersionFile.isFile || coreVersionFile.readText() != v2rayVersion) {
-        val v2rayCore = github.getRepository("v2fly/v2ray-core").getReleaseByTagName(v2rayVersion)
-            ?: error("Tag $v2rayVersion not found in v2ray-core")
-
-        val v2rayExtraZip = (v2rayCore.listAssets().find { it.name == "v2ray-extra.zip" }
-            ?: error("v2ray-extra.zip not found in ${v2rayCore.assetsUrl}")).browserDownloadUrl
-
-        println("Downloading $v2rayExtraZip ...")
-
-        downloader.newCall(Request.Builder()
-            .url(v2rayExtraZip)
-            .build()).execute()
-            .let { it.body ?: error("Error when downloading $v2rayExtraZip: $it") }
-            .byteStream().use {
-                cacheFile.outputStream().use { out -> it.copyTo(out) }
-            }
-
-        ZipUtil.get(cacheFile, null, "browserforwarder/index.js").use {
-            File(assets, "v2ray/index.js").outputStream().use { out ->
-                it.copyTo(out)
-            }
-        }
-
-        ZipUtil.get(cacheFile, null, "browserforwarder/index.html").use {
-            File(assets, "v2ray/index.html").outputStream().use { out ->
-                it.copyTo(out)
-            }
-        }
-
-        cacheFile.delete()
-        coreVersionFile.writeText(v2rayVersion)
-    }
-
 }
