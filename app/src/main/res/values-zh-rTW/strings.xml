@@ -1,5 +1,4 @@
 <resources>
-    <string name="app_name">SagerNet</string>
     <string name="app_desc">適用於 Android 的通用代理工具鏈，由 Kotlin 編寫。</string>
 
     <string name="project">專案</string>
@@ -115,7 +114,7 @@
     <string name="show_system_apps">顯示系統應用</string>
 
     <string name="auto_connect">自動連線</string>
-    <string name="auto_connect_summary">如果 SagerNet 在開機或應用更新前正在運行，啟用 SagerNet。</string>
+    <string name="auto_connect_summary">如果 AnXray 在開機或應用更新前正在運行，啟用 AnXray。</string>
     <string name="direct_boot_aware">允許與解鎖前啓動</string>
     <string name="direct_boot_aware_summary">您選取的設定檔將受到較少的保護。</string>
 
@@ -123,7 +122,7 @@
     <string name="service_vpn">VPN 服務</string>
     <string name="service_proxy">代理服務</string>
     <string name="service_transproxy">透明代理服務</string>
-    <string name="forward_success">SagerNet 已啟動。</string>
+    <string name="forward_success">AnXray 已啟動。</string>
     <string name="invalid_server">伺服器名稱無效</string>
     <string name="stop">停止</string>
     <string name="stopping">關閉中……</string>

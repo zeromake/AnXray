@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SagerNet</string>
+    <string name="app_name">AnXray</string>
     <string name="app_desc">The universal proxy toolchain for Android, written in Kotlin.</string>
 
     <string name="project">Project</string>
@@ -57,7 +57,7 @@
     <string name="cag_route">Route Settings</string>
     <string name="allow_access">Allow Connections from the LAN</string>
     <string name="allow_access_sum">Bind inbound servers to 0.0.0.0</string>
-    <string name="force_ss_rust">No v2ray-core shadowsocks</string>
+    <string name="force_ss_rust">No Xray-core shadowsocks</string>
     <string name="force_ss_sum">Force all shadowsocks profiles to use the same shadowsocks-rust backend as Shadowsocks Android</string>
     <string name="inbound_settings">Inbound Settings</string>
     <string name="general_settings">App Settings</string>
@@ -193,7 +193,7 @@
     <string name="show_system_apps">Show system apps</string>
 
     <string name="auto_connect">Auto Connect</string>
-    <string name="auto_connect_summary">Enable SagerNet on startup/app update if it was running before</string>
+    <string name="auto_connect_summary">Enable AnXray on startup/app update if it was running before</string>
     <string name="direct_boot_aware">Allow Toggling in Lock Screen</string>
     <string name="direct_boot_aware_summary">Your selected profile information will be less protected</string>
 
@@ -201,7 +201,7 @@
     <string name="service_vpn">VPN Service</string>
     <string name="service_proxy">Proxy Service</string>
     <string name="service_transproxy">Transproxy Service</string>
-    <string name="forward_success">SagerNet started.</string>
+    <string name="forward_success">AnXray started.</string>
     <string name="invalid_server">Invalid server name</string>
     <string name="service_failed">Failed: </string>
     <string name="stop">Stop</string>

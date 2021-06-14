@@ -16,4 +16,4 @@ include(":external:colorpicker")
 include(":external:preferencex-colorpicker")
 
 include(":app")
-rootProject.name = "SagerNet"
+rootProject.name = "AnXray"
