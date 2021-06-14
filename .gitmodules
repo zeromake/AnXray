@@ -25,24 +25,9 @@
 [submodule "library/shadowsocksr/src/main/jni/re2"]
 	path = library/shadowsocksr/src/main/jni/re2
 	url = https://github.com/google/re2
-[submodule "plugin/trojan-go/src/main/go/trojan-go"]
-	path = plugin/trojan-go/src/main/go/trojan-go
-	url = https://github.com/p4gefau1t/trojan-go
 [submodule "core/src/main/jni/proxychains-ng"]
 	path = library/core/src/main/jni/proxychains
 	url = https://github.com/SagerNet/proxychains-ng
-[submodule "plugin/naive/src/main/jni/naiveproxy"]
-	path = plugin/naive/src/main/jni/naiveproxy
-	url = https://github.com/klzgrad/naiveproxy
-[submodule "plugin/pingtunnel/src/main/go/pingtunnel"]
-	path = plugin/pingtunnel/src/main/go/pingtunnel
-	url = https://github.com/esrrhs/pingtunnel
-[submodule "plugin/relaybaton/src/main/go/relaybaton"]
-	path = plugin/relaybaton/src/main/go/relaybaton
-	url = https://github.com/iyouport-org/relaybaton
-[submodule "plugin/brook/src/main/go/brook"]
-	path = plugin/brook/src/main/go/brook
-	url = https://github.com/txthinking/brook
 [submodule "library/xray"]
 	path = library/xray
 	url = https://github.com/nekohasekai/AndroidLibXrayLite

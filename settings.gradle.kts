@@ -3,11 +3,6 @@ include(":library:shadowsocks")
 include(":library:shadowsocksr")
 
 include(":plugin:api")
-include(":plugin:trojan-go")
-include(":plugin:naive")
-include(":plugin:pingtunnel")
-include(":plugin:relaybaton")
-include(":plugin:brook")
 
 include(":external:preferencex")
 include(":external:preferencex-simplemenu")
