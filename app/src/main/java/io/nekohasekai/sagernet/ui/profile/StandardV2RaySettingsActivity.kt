@@ -318,7 +318,7 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
         val isXTLS = tle == "xtls"
         tlsSni.isVisible = isTLS || isXTLS
         tlsAlpn.isVisible = isTLS || isXTLS
-        certificates.isVisible = isTLS
+        certificates.isVisible = isTLS || isXTLS
         xtlsFlow.isVisible = isXTLS
         if (isXTLS) {
             if (DataStore.serverFlow !in xtlsFlowValue) {
