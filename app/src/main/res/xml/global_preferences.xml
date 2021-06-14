@@ -181,6 +181,14 @@
             app:key="connectionTestURL"
             app:title="@string/connection_test_url"
             app:useSimpleSummaryProvider="true" />
+        <com.takisoft.preferencex.SimpleMenuPreference
+            app:defaultValue=""
+            app:entries="@array/utls_entry"
+            app:entryValues="@array/utls_value"
+            app:icon="@drawable/ic_baseline_fingerprint_24"
+            app:key="xrayFingerprint"
+            app:title="@string/xray_utls_fingerprint"
+            app:useSimpleSummaryProvider="true" />
         <SwitchPreference
             app:defaultValue="false"
             app:icon="@drawable/ic_baseline_compare_arrows_24"

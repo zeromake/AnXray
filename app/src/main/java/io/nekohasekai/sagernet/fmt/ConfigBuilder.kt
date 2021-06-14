@@ -106,6 +106,7 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
     var requireWs = false
     val requireHttp = Build.VERSION.SDK_INT <= Build.VERSION_CODES.M || DataStore.requireHttp
     val requireTransproxy = DataStore.requireTransproxy
+    val xrayFingerprint = DataStore.xrayFingerprint.takeIf { it.isNotBlank() }
 
     return V2RayConfig().apply {
 
@@ -376,6 +377,9 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                         if (bean.sni.isNotBlank()) {
                                             tlsSettings = TLSObject().apply {
                                                 serverName = bean.sni
+                                                xrayFingerprint?.also {
+                                                    fingerprint = it
+                                                }
                                             }
                                         }
                                     }
@@ -408,6 +412,9 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                         if (bean.sni.isNotBlank()) {
                                             tlsSettings = TLSObject().apply {
                                                 serverName = bean.sni
+                                                xrayFingerprint?.also {
+                                                    fingerprint = it
+                                                }
                                             }
                                         }
                                     }
@@ -460,40 +467,31 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                 if (bean.security.isNotBlank()) {
                                     security = bean.security
                                 }
+                                val settings = TLSObject().apply {
+                                    if (bean.sni.isNotBlank()) {
+                                        serverName = bean.sni
+                                    }
+
+                                    if (bean.alpn.isNotBlank()) {
+                                        alpn = bean.alpn.split(",")
+                                    }
+
+                                    if (bean.certificates.isNotBlank()) {
+                                        disableSystemRoot = true
+                                        certificates = listOf(TLSObject.CertificateObject().apply {
+                                            usage = "verify"
+                                            certificate = bean.certificates.split("\n")
+                                                .filter { it.isNotBlank() }
+                                        })
+                                    }
+
+                                    xrayFingerprint?.also {
+                                        fingerprint = it
+                                    }
+                                }
                                 when (security) {
-                                    "tls" -> {
-                                        tlsSettings = TLSObject().apply {
-                                            if (bean.sni.isNotBlank()) {
-                                                serverName = bean.sni
-                                            }
-
-                                            if (bean.alpn.isNotBlank()) {
-                                                alpn = bean.alpn.split(",")
-                                            }
-
-                                            if (bean.certificates.isNotBlank()) {
-                                                disableSystemRoot = true
-                                                certificates =
-                                                    listOf(TLSObject.CertificateObject().apply {
-                                                        usage = "verify"
-                                                        certificate = bean.certificates.split("\n")
-                                                            .filter { it.isNotBlank() }
-                                                    })
-                                            }
-
-                                        }
-                                    }
-                                    "xtls" -> {
-                                        security = "xtls"
-                                        xtlsSettings = XTLSObject().apply {
-                                            if (bean.sni.isNotBlank()) {
-                                                serverName = bean.sni
-                                            }
-                                            if (bean.alpn.isNotBlank()) {
-                                                alpn = bean.alpn.split(",")
-                                            }
-                                        }
-                                    }
+                                    "tls" -> tlsSettings = settings
+                                    "xtls" -> xtlsSettings = settings
                                 }
 
                                 when (network) {
@@ -621,23 +619,23 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                 })
                             streamSettings = StreamSettingsObject().apply {
                                 network = "tcp"
-                                when (bean.security) {
-                                    "tls" -> {
-                                        security = "tls"
-                                        if (bean.sni.isNotBlank()) {
-                                            tlsSettings = TLSObject().apply {
-                                                serverName = bean.sni
-                                            }
-                                        }
+                                security = bean.security
+                                val settings = TLSObject().apply {
+                                    if (bean.sni.isNotBlank()) {
+                                        serverName = bean.sni
                                     }
-                                    "xtls" -> {
-                                        security = "xtls"
-                                        xtlsSettings = XTLSObject().apply {
-                                            if (bean.sni.isNotBlank()) {
-                                                serverName = bean.sni
-                                            }
-                                        }
+
+                                    if (bean.alpn.isNotBlank()) {
+                                        alpn = bean.alpn.split(",")
                                     }
+
+                                    xrayFingerprint?.also {
+                                        fingerprint = it
+                                    }
+                                }
+                                when (security) {
+                                    "tls" -> tlsSettings = settings
+                                    "xtls" -> xtlsSettings = settings
                                 }
 
                             }

@@ -138,6 +138,8 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var bypass by configurationStore.boolean(Key.BYPASS_MODE)
     var individual by configurationStore.string("")
     var forceShadowsocksRust by configurationStore.boolean(Key.FORCE_SHADOWSOCKS_RUST)
+
+    var xrayFingerprint by configurationStore.string(Key.XRAY_UTLS_FINGERPRINT)
     var enableMux by configurationStore.boolean(Key.ENABLE_MUX)
     var enableMuxForAll by configurationStore.boolean(Key.ENABLE_MUX_FOR_ALL)
     var muxConcurrency by configurationStore.stringToInt(Key.MUX_CONCURRENCY) { 8 }

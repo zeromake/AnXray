@@ -73,6 +73,7 @@ object Key {
 
     const val CONNECTION_TEST_URL = "connectionTestURL"
 
+    const val XRAY_UTLS_FINGERPRINT = "xrayFingerprint"
     const val ENABLE_MUX = "enableMux"
     const val ENABLE_MUX_FOR_ALL = "enableMuxForAll"
     const val MUX_CONCURRENCY = "muxConcurrency"

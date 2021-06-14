@@ -132,6 +132,7 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
         val requireTransproxy = findPreference<SwitchPreference>(Key.REQUIRE_TRANSPROXY)!!
         val transproxyPort = findPreference<EditTextPreference>(Key.TRANSPROXY_PORT)!!
         val transproxyMode = findPreference<SimpleMenuPreference>(Key.TRANSPROXY_MODE)!!
+        val xrayFingerprint = findPreference<SimpleMenuPreference>(Key.XRAY_UTLS_FINGERPRINT)!!
 
         transproxyPort.isEnabled = requireTransproxy.isChecked
         transproxyMode.isEnabled = requireTransproxy.isChecked
@@ -207,6 +208,7 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
 
         transproxyPort.onPreferenceChangeListener = reloadListener
         transproxyMode.onPreferenceChangeListener = reloadListener
+        xrayFingerprint.onPreferenceChangeListener = reloadListener
     }
 
     override fun onResume() {
