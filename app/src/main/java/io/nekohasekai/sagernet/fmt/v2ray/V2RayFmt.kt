@@ -135,8 +135,17 @@ fun parseV2Ray(link: String): StandardV2RayBean {
                 url.queryParameter("cert")?.let {
                     bean.certificates = it
                 }
-                url.queryParameter("chain")?.let {
-                    bean.pinnedPeerCertificateChainSha256 = it
+            }
+            "xtls" -> {
+                bean.security = "xtls"
+                url.queryParameter("sni")?.let {
+                    bean.sni = it
+                }
+                url.queryParameter("alpn")?.let {
+                    bean.alpn = it
+                }
+                url.queryParameter("flow")?.let {
+                    bean.flow = it
                 }
             }
         }
@@ -176,9 +185,6 @@ fun parseV2Ray(link: String): StandardV2RayBean {
                 }
                 url.queryParameter("path")?.let {
                     bean.path = it
-                }
-                url.queryParameter("ed")?.let {
-                    bean.wsMaxEarlyData = it.toInt()
                 }
             }
             "quic" -> {
@@ -370,11 +376,6 @@ fun StandardV2RayBean.toUri(standard: Boolean = true): String {
                     builder.encodedPath(path.pathSafe())
                 }
             }
-            if (type == "ws") {
-                if (wsMaxEarlyData > 0) {
-                    builder.addQueryParameter("ed", "$wsMaxEarlyData")
-                }
-            }
         }
         "quic" -> {
             if (headerType.isNotBlank() && headerType != "none") {
@@ -405,8 +406,16 @@ fun StandardV2RayBean.toUri(standard: Boolean = true): String {
                 if (certificates.isNotBlank()) {
                     builder.addQueryParameter("cert", certificates)
                 }
-                if (pinnedPeerCertificateChainSha256.isNotBlank()) {
-                    builder.addQueryParameter("chain", pinnedPeerCertificateChainSha256)
+            }
+            "xtls" -> {
+                if (sni.isNotBlank()) {
+                    builder.addQueryParameter("sni", sni)
+                }
+                if (alpn.isNotBlank()) {
+                    builder.addQueryParameter("alpn", alpn)
+                }
+                if (flow.isNotBlank()) {
+                    builder.addQueryParameter("flow", flow)
                 }
             }
         }

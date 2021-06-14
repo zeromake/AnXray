@@ -25,6 +25,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import android.os.SystemClock
+import android.system.Os
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -365,6 +366,12 @@ class ProxyInstance(val profile: ProxyEntity) {
                     }
                 }
             }
+        }
+
+        if (config.requireWs) {
+            Os.setenv("XRAY_BROWSER_DIALER", "127.0.0.1:" + (DataStore.socksPort + 1), true)
+        } else {
+            Os.unsetenv("XRAY_BROWSER_DIALER")
         }
 
         v2rayPoint.runLoop(DataStore.preferIpv6)

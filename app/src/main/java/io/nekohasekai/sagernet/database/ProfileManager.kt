@@ -355,7 +355,8 @@ object ProfileManager {
                 for (proxy in (Yaml().apply {
                     addTypeDescription(TypeDescription(String::class.java, "str"))
                 }.loadAs(
-                    text, Map::class.java
+                    text,
+                    Map::class.java
                 )["proxies"] as? (List<Map<String, Any?>>)
                     ?: error(app.getString(R.string.no_proxies_found_in_file)))) {
 
@@ -367,21 +368,23 @@ object ProfileManager {
                                 username = proxy["username"] as String?
                                 password = proxy["password"] as String?
                                 tls = proxy["tls"]?.toString() == "true"
-                                sni =
-                                    proxy["sni"] as String? //                            udp = proxy["udp"]?.toString() == "true"
+                                sni = proxy["sni"] as String?
+//                            udp = proxy["udp"]?.toString() == "true"
                                 name = proxy["name"] as String?
                             })
                         }
                         "http" -> {
-                            proxies.add(HttpBean().apply {
-                                serverAddress = proxy["server"] as String
-                                serverPort = proxy["port"].toString().toInt()
-                                username = proxy["username"] as String?
-                                password = proxy["password"] as String?
-                                tls = proxy["tls"]?.toString() == "true"
-                                sni = proxy["sni"] as String?
-                                name = proxy["name"] as String?
-                            })
+                            proxies.add(
+                                HttpBean().apply {
+                                    serverAddress = proxy["server"] as String
+                                    serverPort = proxy["port"].toString().toInt()
+                                    username = proxy["username"] as String?
+                                    password = proxy["password"] as String?
+                                    tls = proxy["tls"]?.toString() == "true"
+                                    sni = proxy["sni"] as String?
+                                    name = proxy["name"] as String?
+                                }
+                            )
                         }
                         "ss" -> {
                             var pluginStr = ""
@@ -471,7 +474,8 @@ object ProfileManager {
                                     "obfs" -> entity.obfs = opt.value as String
                                     "protocol" -> entity.protocol = opt.value as String
                                     "obfs-param" -> entity.obfsParam = opt.value as String
-                                    "protocol-param" -> entity.protocolParam = opt.value as String
+                                    "protocol-param" -> entity.protocolParam =
+                                        opt.value as String
                                 }
                             }
                             proxies.add(entity)
@@ -519,17 +523,20 @@ object ProfileManager {
                 }
                 json.containsKey("protocol") -> {
                     val v2rayConfig = gson.fromJson(
-                        json.toString(), OutboundObject::class.java
+                        json.toString(),
+                        OutboundObject::class.java
                     ).apply { init() }
                     return parseOutbound(v2rayConfig)
                 }
                 json.containsKey("outbound") -> {
                     val v2rayConfig = gson.fromJson(
-                        json.getJSONObject("outbound").toString(), OutboundObject::class.java
+                        json.getJSONObject("outbound").toString(),
+                        OutboundObject::class.java
                     ).apply { init() }
                     return parseOutbound(v2rayConfig)
                 }
-                json.containsKey("outbounds") -> {/*   val fakedns = json["fakedns"]
+                json.containsKey("outbounds") -> {
+                    /*   val fakedns = json["fakedns"]
                        if (fakedns is JSONObject) {
                            json["fakedns"] = JSONArray().apply {
                                add(fakedns)
@@ -559,11 +566,13 @@ object ProfileManager {
                        } catch (e: Exception) {
                            Logs.w(e)*/
                     json.getJSONArray("outbounds").toList(JSONObject::class.java).forEach {
-                        val v2rayConfig = gson.fromJson(it.toString(), OutboundObject::class.java)
+                        val v2rayConfig = gson
+                            .fromJson(it.toString(), OutboundObject::class.java)
                             .apply { init() }
 
                         proxies.addAll(parseOutbound(v2rayConfig))
-                    }/* null
+                    }
+                    /* null
                  }?.outbounds?.forEach {
                      proxies.addAll(parseOutbound(it))
                  }*/
@@ -662,6 +671,16 @@ object ProfileManager {
                                     }
                                 }
                             }
+                            "xtls" -> {
+                                xtlsSettings?.apply {
+                                    serverName?.also {
+                                        v2rayBean.sni = it
+                                    }
+                                    alpn?.also {
+                                        v2rayBean.alpn = it.joinToString(",")
+                                    }
+                                }
+                            }
                         }
                         v2rayBean.type = network ?: v2rayBean.type
                         when (network) {
@@ -716,10 +735,6 @@ object ProfileManager {
 
                                     path?.also {
                                         v2rayBean.path = it
-                                    }
-
-                                    maxEarlyData?.also {
-                                        v2rayBean.wsMaxEarlyData = it
                                     }
                                 }
                             }
@@ -783,6 +798,9 @@ object ProfileManager {
                                     uuid = user.id
                                     encryption = user.encryption
                                     name = displayName() + " - ${user.id}"
+                                    if (!user.flow.isNullOrBlank()) {
+                                        flow = user.flow
+                                    }
                                 })
                             }
                         }
@@ -813,6 +831,16 @@ object ProfileManager {
                                     }
                                 }
                             }
+                            "xtls" -> {
+                                xtlsSettings?.apply {
+                                    serverName?.also {
+                                        trojanBean.sni = it
+                                    }
+                                    alpn?.also {
+                                        trojanBean.alpn = it.joinToString(",")
+                                    }
+                                }
+                            }
                         }
 
                         (settings.value as? TrojanOutboundConfigurationObject)?.servers?.forEach {
@@ -820,6 +848,9 @@ object ProfileManager {
                                 serverAddress = it.address
                                 serverPort = it.port
                                 password = it.password
+                                it.flow?.also {
+                                    flow = it
+                                }
                             })
                         }
                     }

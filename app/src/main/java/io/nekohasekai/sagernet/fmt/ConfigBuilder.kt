@@ -338,9 +338,6 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                     return@forEachIndexed
                 } else {
                     outbound.apply {
-                        val keepAliveInterval = DataStore.tcpKeepAliveInterval
-                        val needKeepAliveInterval = keepAliveInterval !in intArrayOf(0, 15)
-
                         if (bean is SOCKSBean) {
                             protocol = "socks"
                             settings = LazyOutboundConfigurationObject(
@@ -360,7 +357,7 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                             }
                                         })
                                 })
-                            if (bean.tls || needKeepAliveInterval) {
+                            if (bean.tls) {
                                 streamSettings = StreamSettingsObject().apply {
                                     network = "tcp"
                                     if (bean.tls) {
@@ -369,11 +366,6 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                             tlsSettings = TLSObject().apply {
                                                 serverName = bean.sni
                                             }
-                                        }
-                                    }
-                                    if (needKeepAliveInterval) {
-                                        sockopt = StreamSettingsObject.SockoptObject().apply {
-                                            tcpKeepAliveInterval = keepAliveInterval
                                         }
                                     }
                                 }
@@ -396,7 +388,7 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                             }
                                         })
                                 })
-                            if (bean.tls || needKeepAliveInterval) {
+                            if (bean.tls) {
                                 streamSettings = StreamSettingsObject().apply {
                                     network = "tcp"
                                     if (bean.tls) {
@@ -405,11 +397,6 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                             tlsSettings = TLSObject().apply {
                                                 serverName = bean.sni
                                             }
-                                        }
-                                    }
-                                    if (needKeepAliveInterval) {
-                                        sockopt = StreamSettingsObject.SockoptObject().apply {
-                                            tcpKeepAliveInterval = keepAliveInterval
                                         }
                                     }
                                 }
@@ -463,30 +450,38 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                 if (bean.security.isNotBlank()) {
                                     security = bean.security
                                 }
-                                if (security == "tls") {
-                                    tlsSettings = TLSObject().apply {
-                                        if (bean.sni.isNotBlank()) {
-                                            serverName = bean.sni
-                                        }
+                                when (security) {
+                                    "tls" -> {
+                                        tlsSettings = TLSObject().apply {
+                                            if (bean.sni.isNotBlank()) {
+                                                serverName = bean.sni
+                                            }
 
-                                        if (bean.alpn.isNotBlank()) {
-                                            alpn = bean.alpn.split(",")
-                                        }
+                                            if (bean.alpn.isNotBlank()) {
+                                                alpn = bean.alpn.split(",")
+                                            }
 
-                                        if (bean.certificates.isNotBlank()) {
-                                            disableSystemRoot = true
-                                            certificates =
-                                                listOf(TLSObject.CertificateObject().apply {
-                                                    usage = "verify"
-                                                    certificate = bean.certificates.split("\n")
-                                                        .filter { it.isNotBlank() }
-                                                })
-                                        }
+                                            if (bean.certificates.isNotBlank()) {
+                                                disableSystemRoot = true
+                                                certificates =
+                                                    listOf(TLSObject.CertificateObject().apply {
+                                                        usage = "verify"
+                                                        certificate = bean.certificates.split("\n")
+                                                            .filter { it.isNotBlank() }
+                                                    })
+                                            }
 
-                                        if (bean.pinnedPeerCertificateChainSha256.isNotBlank()) {
-                                            pinnedPeerCertificateChainSha256 =
-                                                bean.pinnedPeerCertificateChainSha256.split("\n")
-                                                    .filter { it.isNotBlank() }
+                                        }
+                                    }
+                                    "xtls" -> {
+                                        security = "xtls"
+                                        xtlsSettings = XTLSObject().apply {
+                                            if (bean.sni.isNotBlank()) {
+                                                serverName = bean.sni
+                                            }
+                                            if (bean.alpn.isNotBlank()) {
+                                                alpn = bean.alpn.split(",")
+                                            }
                                         }
                                     }
                                 }
@@ -547,12 +542,7 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
 
                                             path = bean.path.takeIf { it.isNotBlank() } ?: "/"
 
-                                            if (bean.wsMaxEarlyData > 0) {
-                                                maxEarlyData = bean.wsMaxEarlyData
-                                            }
-
                                             if (bean.wsUseBrowserForwarder) {
-                                                useBrowserForwarding = true
                                                 requireWs = true
                                             }
                                         }
@@ -585,13 +575,6 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                         }
                                     }
                                 }
-
-                                if (needKeepAliveInterval) {
-                                    sockopt = StreamSettingsObject.SockoptObject().apply {
-                                        tcpKeepAliveInterval = keepAliveInterval
-                                    }
-                                }
-
                             }
                         } else if (bean is ShadowsocksBean) {
                             protocol = "shadowsocks"
@@ -606,13 +589,6 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                                 method = bean.method
                                                 password = bean.password
                                             })
-                                    if (needKeepAliveInterval) {
-                                        streamSettings = StreamSettingsObject().apply {
-                                            sockopt = StreamSettingsObject.SockoptObject().apply {
-                                                tcpKeepAliveInterval = keepAliveInterval
-                                            }
-                                        }
-                                    }
                                 })
                         } else if (bean is TrojanBean) {
                             protocol = "trojan"
@@ -630,17 +606,25 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                 })
                             streamSettings = StreamSettingsObject().apply {
                                 network = "tcp"
-                                security = "tls"
-                                if (bean.sni.isNotBlank()) {
-                                    tlsSettings = TLSObject().apply {
-                                        serverName = bean.sni
+                                when (bean.security) {
+                                    "tls" -> {
+                                        security = "tls"
+                                        if (bean.sni.isNotBlank()) {
+                                            tlsSettings = TLSObject().apply {
+                                                serverName = bean.sni
+                                            }
+                                        }
+                                    }
+                                    "xtls" -> {
+                                        security = "xtls"
+                                        xtlsSettings = XTLSObject().apply {
+                                            if (bean.sni.isNotBlank()) {
+                                                serverName = bean.sni
+                                            }
+                                        }
                                     }
                                 }
-                                if (needKeepAliveInterval) {
-                                    sockopt = StreamSettingsObject.SockoptObject().apply {
-                                        tcpKeepAliveInterval = keepAliveInterval
-                                    }
-                                }
+
                             }
                         }
                         if (index == 0 && proxyEntity.needCoreMux() && DataStore.enableMux) {
@@ -762,13 +746,6 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                 })
             }
 
-        }
-
-        if (requireWs) {
-            browserForwarder = BrowserForwarderObject().apply {
-                listenAddr = "127.0.0.1"
-                listenPort = DataStore.socksPort + 1
-            }
         }
 
         outbounds.add(OutboundObject().apply {

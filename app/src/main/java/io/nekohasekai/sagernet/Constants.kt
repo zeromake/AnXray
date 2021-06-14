@@ -78,7 +78,6 @@ object Key {
     const val MUX_CONCURRENCY = "muxConcurrency"
     const val SHOW_STOP_BUTTON = "showStopButton"
     const val SECURITY_ADVISORY = "securityAdvisory"
-    const val TCP_KEEP_ALIVE_INTERVAL = "tcpKeepAliveInterval"
 
     const val PROFILE_DIRTY = "profileDirty"
     const val PROFILE_ID = "profileId"
@@ -113,8 +112,8 @@ object Key {
     const val SERVER_ALPN = "serverALPN"
     const val SERVER_CERTIFICATES = "serverCertificates"
     const val SERVER_PINNED_CERTIFICATE_CHAIN = "serverPinnedCertificateChain"
+    const val SERVER_FLOW = "serverFlow"
     const val SERVER_QUIC_SECURITY = "serverQuicSecurity"
-    const val SERVER_WS_MAX_EARLY_DATA = "serverWsMaxEarlyData"
     const val SERVER_WS_BROWSER_FORWARDING = "serverWsBrowserForwarding"
     const val SERVER_WS_CATEGORY = "serverWsCategory"
     const val SERVER_SS_CATEGORY = "serverSsCategory"

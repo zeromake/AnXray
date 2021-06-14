@@ -74,7 +74,6 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var domainStrategy by configurationStore.string(Key.DOMAIN_STRATEGY) { "AsIs" }
     var domainMatcher by configurationStore.string(Key.DOMAIN_MATCHER) { "mph" }
     var trafficSniffing by configurationStore.boolean(Key.TRAFFIC_SNIFFING) { true }
-    var tcpKeepAliveInterval by configurationStore.stringToInt(Key.TCP_KEEP_ALIVE_INTERVAL) { 15 }
 
     var bypassLan by configurationStore.boolean(Key.BYPASS_LAN) { true }
 
@@ -186,8 +185,8 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var serverALPN by profileCacheStore.string(Key.SERVER_ALPN)
     var serverCertificates by profileCacheStore.string(Key.SERVER_CERTIFICATES)
     var serverPinnedCertificateChain by profileCacheStore.string(Key.SERVER_PINNED_CERTIFICATE_CHAIN)
+    var serverFlow by profileCacheStore.string(Key.SERVER_FLOW)
     var serverQuicSecurity by profileCacheStore.string(Key.SERVER_QUIC_SECURITY)
-    var serverWsMaxEarlyData by profileCacheStore.stringToInt(Key.SERVER_WS_MAX_EARLY_DATA)
     var serverWsBrowserForwarding by profileCacheStore.boolean(Key.SERVER_WS_BROWSER_FORWARDING)
     var serverHeaders by profileCacheStore.string(Key.SERVER_HEADERS)
 

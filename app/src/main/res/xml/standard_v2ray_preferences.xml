@@ -93,17 +93,18 @@
             app:key="serverPinnedCertificateChain"
             app:title="@string/pinned_peer_certificate_chain_sha256"
             app:useSimpleSummaryProvider="true" />
+        <com.takisoft.preferencex.SimpleMenuPreference
+            app:entries="@array/xtls_flow_entry"
+            app:entryValues="@array/xtls_flow_value"
+            app:icon="@drawable/ic_baseline_stream_24"
+            app:key="serverFlow"
+            app:title="@string/flow"
+            app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 
     <PreferenceCategory
         app:key="serverWsCategory"
         app:title="@string/cag_ws">
-        <EditTextPreference
-            app:defaultValue="0"
-            app:icon="@drawable/ic_baseline_compare_arrows_24"
-            app:key="serverWsMaxEarlyData"
-            app:title="@string/ws_max_early_data"
-            app:useSimpleSummaryProvider="true" />
 
         <SwitchPreference
             app:icon="@drawable/ic_baseline_texture_24"

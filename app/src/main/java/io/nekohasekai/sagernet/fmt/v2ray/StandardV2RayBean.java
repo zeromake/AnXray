@@ -150,12 +150,19 @@ public abstract class StandardV2RayBean extends AbstractBean {
     // --------------------------------------- //
 
     public String grpcServiceName;
-    public Integer wsMaxEarlyData;
 
     public String certificates;
-    public String pinnedPeerCertificateChainSha256;
 
     public Boolean wsUseBrowserForwarder;
+
+    // --------------------------------------- //
+
+    /**
+     * XTLS 的流控方式。可选值为 xtls-rprx-direct、xtls-rprx-splice 等。
+     * <p>
+     * 若使用 XTLS，此项不可省略，否则无此项。此项不可为空字符串。
+     */
+    public String flow;
 
     @Override
     public void initDefaultValues() {
@@ -176,10 +183,9 @@ public abstract class StandardV2RayBean extends AbstractBean {
         if (StrUtil.isBlank(alpn)) alpn = "";
 
         if (StrUtil.isBlank(grpcServiceName)) grpcServiceName = "";
-        if (wsMaxEarlyData == null) wsMaxEarlyData = 0;
         if (wsUseBrowserForwarder == null) wsUseBrowserForwarder = false;
         if (certificates == null) certificates = "";
-        if (pinnedPeerCertificateChainSha256 == null) pinnedPeerCertificateChainSha256 = "";
+        if (StrUtil.isBlank(flow)) flow = "";
 
     }
 
@@ -207,7 +213,6 @@ public abstract class StandardV2RayBean extends AbstractBean {
             case "ws": {
                 output.writeString(host);
                 output.writeString(path);
-                output.writeInt(wsMaxEarlyData);
                 output.writeBoolean(wsUseBrowserForwarder);
                 break;
             }
@@ -233,7 +238,12 @@ public abstract class StandardV2RayBean extends AbstractBean {
                 output.writeString(sni);
                 output.writeString(alpn);
                 output.writeString(certificates);
-                output.writeString(pinnedPeerCertificateChainSha256);
+                break;
+            }
+            case "xtls": {
+                output.writeString(sni);
+                output.writeString(alpn);
+                output.writeString(flow);
                 break;
             }
         }
@@ -262,7 +272,6 @@ public abstract class StandardV2RayBean extends AbstractBean {
             case "ws": {
                 host = input.readString();
                 path = input.readString();
-                wsMaxEarlyData = input.readInt();
                 wsUseBrowserForwarder = input.readBoolean();
                 break;
             }
@@ -288,9 +297,13 @@ public abstract class StandardV2RayBean extends AbstractBean {
                 alpn = input.readString();
                 if (version >= 1) {
                     certificates = input.readString();
-                    pinnedPeerCertificateChainSha256 = input.readString();
                 }
                 break;
+            }
+            case "xtls": {
+                sni = input.readString();
+                alpn = input.readString();
+                flow = input.readString();
             }
         }
 
