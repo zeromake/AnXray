@@ -46,3 +46,6 @@
 [submodule "library/xray"]
 	path = library/xray
 	url = https://github.com/nekohasekai/AndroidLibXrayLite
+[submodule "external/editorkit"]
+	path = external/editorkit
+	url = https://github.com/nekohasekai/Squircle-IDE

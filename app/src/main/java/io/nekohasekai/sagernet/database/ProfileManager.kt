@@ -414,7 +414,7 @@ object ProfileManager {
                                     "port" -> bean.serverPort = opt.value.toString().toInt()
                                     "uuid" -> bean.uuid = opt.value as String
                                     "alterId" -> bean.alterId = opt.value.toString().toInt()
-                                    "cipher" -> bean.security = opt.value as String
+                                    "cipher" -> bean.encryption = opt.value as String
                                     "network" -> bean.type = opt.value as String
                                     "tls" -> bean.security =
                                         if (opt.value?.toString() == "true") "tls" else ""
@@ -565,7 +565,7 @@ object ProfileManager {
                            ).apply { init() }
                        } catch (e: Exception) {
                            Logs.w(e)*/
-                    json.getJSONArray("outbounds").toList(JSONObject::class.java).forEach {
+                    json.getJSONArray("outbounds").filterIsInstance<JSONObject>().forEach {
                         val v2rayConfig = gson
                             .fromJson(it.toString(), OutboundObject::class.java)
                             .apply { init() }
@@ -739,7 +739,7 @@ object ProfileManager {
                                 }
                             }
                             "http", "h2" -> {
-                                v2rayBean.type = "h2"
+                                v2rayBean.type = "http"
 
                                 httpSettings?.apply {
                                     host?.also {
