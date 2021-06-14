@@ -457,6 +457,9 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                                                 id = bean.uuidOrGenerate()
                                                                 encryption = bean.encryption
                                                                 level = 8
+                                                                if (bean.security == "xtls") {
+                                                                    flow = bean.flow
+                                                                }
                                                             })
                                                 })
                                     })
@@ -615,6 +618,9 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                                 port = bean.serverPort
                                                 password = bean.password
                                                 level = 8
+                                                if (bean.security == "xtls") {
+                                                    flow = bean.flow
+                                                }
                                             })
                                 })
                             streamSettings = StreamSettingsObject().apply {
