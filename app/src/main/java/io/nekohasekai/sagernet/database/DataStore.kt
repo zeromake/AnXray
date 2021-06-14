@@ -184,11 +184,11 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var serverEncryption by profileCacheStore.string(Key.SERVER_ENCRYPTION)
     var serverALPN by profileCacheStore.string(Key.SERVER_ALPN)
     var serverCertificates by profileCacheStore.string(Key.SERVER_CERTIFICATES)
-    var serverPinnedCertificateChain by profileCacheStore.string(Key.SERVER_PINNED_CERTIFICATE_CHAIN)
     var serverFlow by profileCacheStore.string(Key.SERVER_FLOW)
     var serverQuicSecurity by profileCacheStore.string(Key.SERVER_QUIC_SECURITY)
     var serverWsBrowserForwarding by profileCacheStore.boolean(Key.SERVER_WS_BROWSER_FORWARDING)
     var serverHeaders by profileCacheStore.string(Key.SERVER_HEADERS)
+    var serverMultiMode by profileCacheStore.boolean(Key.SERVER_MULTI_MODE)
 
     var routeName by profileCacheStore.string(Key.ROUTE_NAME)
     var routeDomain by profileCacheStore.string(Key.ROUTE_DOMAIN)

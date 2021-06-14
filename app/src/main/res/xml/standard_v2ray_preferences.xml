@@ -66,6 +66,11 @@
             app:key="serverPath"
             app:title="@string/http_path"
             app:useSimpleSummaryProvider="true" />
+        <SwitchPreference
+            app:icon="@drawable/ic_baseline_running_with_errors_24"
+            app:key="serverMultiMode"
+            app:summary="@string/multi_mode_sum"
+            app:title="@string/multi_mode" />
         <com.takisoft.preferencex.SimpleMenuPreference
             app:entries="@array/transport_layer_encryption_entry"
             app:entryValues="@array/transport_layer_encryption_value"

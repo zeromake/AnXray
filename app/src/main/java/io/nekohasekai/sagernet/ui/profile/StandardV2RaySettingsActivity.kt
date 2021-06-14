@@ -24,6 +24,7 @@ package io.nekohasekai.sagernet.ui.profile
 import android.os.Bundle
 import androidx.preference.EditTextPreference
 import androidx.preference.PreferenceCategory
+import androidx.preference.SwitchPreference
 import com.takisoft.preferencex.PreferenceFragmentCompat
 import com.takisoft.preferencex.SimpleMenuPreference
 import io.nekohasekai.sagernet.Key
@@ -57,7 +58,10 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
         when (type) {
             "kcp" -> DataStore.serverPath = mKcpSeed
             "quic" -> DataStore.serverPath = quicKey
-            "grpc" -> DataStore.serverPath = grpcServiceName
+            "grpc" -> {
+                DataStore.serverPath = grpcServiceName
+                DataStore.serverMultiMode = grpcMultiMode
+            }
             else -> DataStore.serverPath = path
         }
 
@@ -87,7 +91,10 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
         when (type) {
             "kcp" -> mKcpSeed = DataStore.serverPath
             "quic" -> quicKey = DataStore.serverPath
-            "grpc" -> grpcServiceName = DataStore.serverPath
+            "grpc" -> {
+                grpcServiceName = DataStore.serverPath
+                grpcMultiMode = DataStore.serverMultiMode
+            }
             else -> path = DataStore.serverPath
         }
         security = DataStore.serverSecurity
@@ -105,12 +112,12 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
     lateinit var requestHost: EditTextPreference
     lateinit var path: EditTextPreference
     lateinit var quicSecurity: SimpleMenuPreference
+    lateinit var multiMode: SwitchPreference
 
     lateinit var security: SimpleMenuPreference
     lateinit var tlsSni: EditTextPreference
     lateinit var tlsAlpn: EditTextPreference
     lateinit var certificates: EditTextPreference
-    lateinit var pinnedCertificateChain: EditTextPreference
     lateinit var xtlsFlow: SimpleMenuPreference
 
     lateinit var wsCategory: PreferenceCategory
@@ -135,8 +142,8 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
         tlsSni = findPreference(Key.SERVER_SNI)!!
         tlsAlpn = findPreference(Key.SERVER_ALPN)!!
         certificates = findPreference(Key.SERVER_CERTIFICATES)!!
-        pinnedCertificateChain = findPreference(Key.SERVER_PINNED_CERTIFICATE_CHAIN)!!
         xtlsFlow = findPreference(Key.SERVER_FLOW)!!
+        multiMode = findPreference(Key.SERVER_MULTI_MODE)!!
 
         wsCategory = findPreference(Key.SERVER_WS_CATEGORY)!!
 
@@ -202,8 +209,7 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
                     security.setEntryValues(R.array.transport_layer_encryption_value)
                     security.value = DataStore.serverSecurity
 
-                    val tlev =
-                        resources.getStringArray(R.array.transport_layer_encryption_value)
+                    val tlev = resources.getStringArray(R.array.transport_layer_encryption_value)
                     if (security.value !in tlev) {
                         security.value = tlev[0]
                     }
@@ -212,6 +218,13 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
         }
 
         updateTle(security.value)
+
+        val isQuic = network == "quic"
+        val isGRPC = network == "grpc"
+        val isWs = network == "ws"
+        quicSecurity.isVisible = isQuic
+        multiMode.isVisible = isGRPC
+        wsCategory.isVisible = isWs
 
         when (network) {
             "tcp" -> {
@@ -237,10 +250,7 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
 
                 requestHost.setTitle(R.string.http_host)
                 path.setTitle(R.string.http_path)
-
                 header.isVisible = true
-                quicSecurity.isVisible = false
-                wsCategory.isVisible = false
             }
             "http" -> {
                 requestHost.setTitle(R.string.http_host)
@@ -249,8 +259,6 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
                 header.isVisible = false
                 requestHost.isVisible = true
                 path.isVisible = true
-                quicSecurity.isVisible = false
-                wsCategory.isVisible = false
             }
             "ws" -> {
                 requestHost.setTitle(R.string.ws_host)
@@ -259,8 +267,6 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
                 header.isVisible = false
                 requestHost.isVisible = true
                 path.isVisible = true
-                quicSecurity.isVisible = false
-                wsCategory.isVisible = true
             }
             "kcp" -> {
                 header.setEntries(R.array.kcp_quic_headers_entry)
@@ -278,8 +284,6 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
                 header.isVisible = true
                 requestHost.isVisible = false
                 path.isVisible = true
-                quicSecurity.isVisible = false
-                wsCategory.isVisible = false
             }
             "quic" -> {
                 header.setEntries(R.array.kcp_quic_headers_entry)
@@ -297,8 +301,6 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
                 header.isVisible = true
                 requestHost.isVisible = false
                 path.isVisible = true
-                quicSecurity.isVisible = true
-                wsCategory.isVisible = false
             }
             "grpc" -> {
                 path.setTitle(R.string.grpc_service_name)
@@ -307,7 +309,6 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
                 requestHost.isVisible = false
                 path.isVisible = true
                 quicSecurity.isVisible = false
-                wsCategory.isVisible = false
             }
         }
     }
@@ -318,7 +319,6 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
         tlsSni.isVisible = isTLS || isXTLS
         tlsAlpn.isVisible = isTLS || isXTLS
         certificates.isVisible = isTLS
-        pinnedCertificateChain.isVisible = isTLS
         xtlsFlow.isVisible = isXTLS
         if (isXTLS) {
             if (DataStore.serverFlow !in xtlsFlowValue) {

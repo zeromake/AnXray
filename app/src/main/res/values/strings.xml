@@ -73,6 +73,8 @@
     <string name="show_stop_sum">If you don’t want to use Quick Tile as the switch</string>
     <string name="show_direct_speed">Show Direct Speed</string>
     <string name="show_direct_speed_sum">Show the traffic speed without proxy in the notification as well</string>
+    <string name="multi_mode">gRPC Multi Mode</string>
+    <string name="multi_mode_sum">Experimental option. May not be retained for a long time, and cross-version compatibility is not guaranteed.</string>
 
     <string name="traffic">%1$s↑ %2$s↓</string>
     <string name="speed_detail">Proxy： %1$s↑ %2$s↓\nDirect： %3$s↑ %4$s↓</string>

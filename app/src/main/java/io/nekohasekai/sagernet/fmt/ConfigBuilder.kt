@@ -586,6 +586,7 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                     "grpc" -> {
                                         grpcSettings = GrpcObject().apply {
                                             serviceName = bean.grpcServiceName
+                                            multiMode = bean.grpcMultiMode
                                         }
                                     }
                                 }

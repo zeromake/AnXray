@@ -197,6 +197,11 @@ fun parseV2Ray(link: String): StandardV2RayBean {
                 url.queryParameter("serviceName")?.let {
                     bean.grpcServiceName = it
                 }
+                url.queryParameter("multiMode")?.also {
+                    bean.grpcMultiMode = true
+                } ?: url.queryParameter("mode")?.takeIf { it == "multi" }?.also {
+                    bean.grpcMultiMode = true
+                }
             }
         }
     }

@@ -150,6 +150,7 @@ public abstract class StandardV2RayBean extends AbstractBean {
     // --------------------------------------- //
 
     public String grpcServiceName;
+    public Boolean grpcMultiMode;
 
     public String certificates;
 
@@ -185,6 +186,8 @@ public abstract class StandardV2RayBean extends AbstractBean {
         if (StrUtil.isBlank(alpn)) alpn = "";
 
         if (StrUtil.isBlank(grpcServiceName)) grpcServiceName = "";
+        if (grpcMultiMode == null) grpcMultiMode = false;
+
         if (wsUseBrowserForwarder == null) wsUseBrowserForwarder = false;
         if (certificates == null) certificates = "";
         if (StrUtil.isBlank(flow)) flow = "";
@@ -230,6 +233,7 @@ public abstract class StandardV2RayBean extends AbstractBean {
             }
             case "grpc": {
                 output.writeString(grpcServiceName);
+                output.writeBoolean(grpcMultiMode);
             }
         }
 
@@ -289,6 +293,7 @@ public abstract class StandardV2RayBean extends AbstractBean {
             }
             case "grpc": {
                 grpcServiceName = input.readString();
+                grpcMultiMode = input.readBoolean();
             }
         }
 

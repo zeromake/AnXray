@@ -300,5 +300,6 @@
     <string name="document">文档</string>
     <string name="config_settings">配置设置</string>
     <string name="custom_config">自定义配置</string>
+    <string name="multi_mode_sum">这是一个实验性选项. 可能不会被长期保留, 也不保证跨版本兼容.</string>
 
 </resources>
