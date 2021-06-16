@@ -63,13 +63,10 @@ import io.nekohasekai.sagernet.ktx.app
 import io.nekohasekai.sagernet.ui.profile.*
 
 @Entity(
-    tableName = "proxy_entities", indices = [
-        Index("groupId", name = "groupId")
-    ]
+    tableName = "proxy_entities", indices = [Index("groupId", name = "groupId")]
 )
 data class ProxyEntity(
-    @PrimaryKey(autoGenerate = true)
-    var id: Long = 0L,
+    @PrimaryKey(autoGenerate = true) var id: Long = 0L,
     var groupId: Long,
     var type: Int = 0,
     var userOrder: Long = 0L,
@@ -132,12 +129,8 @@ data class ProxyEntity(
     var stats: TrafficStats? = null
 
     constructor(parcel: Parcel) : this(
-        parcel.readLong(),
-        parcel.readLong(),
-        parcel.readInt(),
-        parcel.readLong(),
-        parcel.readLong(),
-        parcel.readLong()
+        parcel.readLong(), parcel.readLong(), parcel.readInt(), parcel.readLong(),
+        parcel.readLong(), parcel.readLong()
     ) {
         dirty = parcel.readByte() > 0
         val byteArray = ByteArray(parcel.readInt())
@@ -300,7 +293,7 @@ data class ProxyEntity(
 
     fun useExternalShadowsocks(): Boolean {
         val bean = ssBean ?: return false
-        if (DataStore.forceShadowsocksRust) return true
+        if (DataStore.forceShadowsocksRust || DataStore.tcpKeepAliveInterval != 15) return true
         if (bean.plugin.isNotBlank()) {
             Logs.d("Requiring plugin ${bean.plugin}")
             return true
