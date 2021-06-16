@@ -773,7 +773,7 @@ public class V2RayConfig {
 
     public Map<String, Object> stats;
 
-    public List<FakeDnsObject> fakedns;
+    public FakeDnsObject fakedns;
 
     public static class FakeDnsObject {
 

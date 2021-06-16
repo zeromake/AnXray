@@ -100,7 +100,6 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
     val enableDomesticDns = DataStore.enableDomesticDns
     val useFakeDns = dnsMode in arrayOf(DnsMode.FAKEDNS, DnsMode.FAKEDNS_LOCAL)
     val useLocalDns = dnsMode in arrayOf(DnsMode.LOCAL, DnsMode.FAKEDNS_LOCAL)
-    val ipv6Route = DataStore.ipv6Route
     val trafficSniffing = DataStore.trafficSniffing
     val indexMap = ArrayList<LinkedHashMap<Int, ProxyEntity>>()
     var requireWs = false
@@ -136,7 +135,10 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
             }
 
             if (useFakeDns) {
-                fakedns = mutableListOf()
+                fakedns = FakeDnsObject().apply {
+                    ipPool = "${VpnService.FAKEDNS_VLAN4_CLIENT}/15"
+                    poolSize = 65535
+                }/*fakedns = mutableListOf()
                 fakedns.add(FakeDnsObject().apply {
                     ipPool = "${VpnService.FAKEDNS_VLAN4_CLIENT}/15"
                     poolSize = 65535
@@ -146,7 +148,7 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                         ipPool = "${VpnService.FAKEDNS_VLAN6_CLIENT}/18"
                         poolSize = 65535
                     })
-                }
+                }*/
             }
         }
 
@@ -223,8 +225,7 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                 listen = bind
                 port = DataStore.transproxyPort
                 protocol = "dokodemo-door"
-                settings = LazyInboundConfigurationObject(
-                    this,
+                settings = LazyInboundConfigurationObject(this,
                     DokodemoDoorInboundConfigurationObject().apply {
                         network = "tcp,udp"
                         followRedirect = true
@@ -322,14 +323,13 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                     if (!pastExternal) {
                         outbound.apply {
                             protocol = "socks"
-                            settings = LazyOutboundConfigurationObject(
-                                this,
+                            settings = LazyOutboundConfigurationObject(this,
                                 SocksOutboundConfigurationObject().apply {
-                                    servers = listOf(SocksOutboundConfigurationObject.ServerObject()
-                                        .apply {
-                                            address = "127.0.0.1"
-                                            port = localPort
-                                        })
+                                    servers = listOf(
+                                        SocksOutboundConfigurationObject.ServerObject().apply {
+                                                address = "127.0.0.1"
+                                                port = localPort
+                                            })
                                 })
                             tag = if (index == 0) tagInbound else {
                                 "$tagInbound-${proxyEntity.id}"
@@ -352,22 +352,21 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                     outbound.apply {
                         if (bean is SOCKSBean) {
                             protocol = "socks"
-                            settings = LazyOutboundConfigurationObject(
-                                this,
+                            settings = LazyOutboundConfigurationObject(this,
                                 SocksOutboundConfigurationObject().apply {
-                                    servers = listOf(SocksOutboundConfigurationObject.ServerObject()
-                                        .apply {
-                                            address = bean.serverAddress
-                                            port = bean.serverPort
-                                            if (!bean.username.isNullOrBlank()) {
-                                                users =
-                                                    listOf(SocksOutboundConfigurationObject.ServerObject.UserObject()
-                                                        .apply {
-                                                            user = bean.username
-                                                            pass = bean.password
-                                                        })
-                                            }
-                                        })
+                                    servers = listOf(
+                                        SocksOutboundConfigurationObject.ServerObject().apply {
+                                                address = bean.serverAddress
+                                                port = bean.serverPort
+                                                if (!bean.username.isNullOrBlank()) {
+                                                    users = listOf(
+                                                        SocksOutboundConfigurationObject.ServerObject.UserObject()
+                                                            .apply {
+                                                                user = bean.username
+                                                                pass = bean.password
+                                                            })
+                                                }
+                                            })
                                 })
                             if (bean.tls) {
                                 streamSettings = StreamSettingsObject().apply {
@@ -387,22 +386,21 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                             }
                         } else if (bean is HttpBean) {
                             protocol = "http"
-                            settings = LazyOutboundConfigurationObject(
-                                this,
+                            settings = LazyOutboundConfigurationObject(this,
                                 HTTPOutboundConfigurationObject().apply {
-                                    servers = listOf(HTTPOutboundConfigurationObject.ServerObject()
-                                        .apply {
-                                            address = bean.serverAddress
-                                            port = bean.serverPort
-                                            if (!bean.username.isNullOrBlank()) {
-                                                users =
-                                                    listOf(HTTPInboundConfigurationObject.AccountObject()
-                                                        .apply {
-                                                            user = bean.username
-                                                            pass = bean.password
-                                                        })
-                                            }
-                                        })
+                                    servers = listOf(
+                                        HTTPOutboundConfigurationObject.ServerObject().apply {
+                                                address = bean.serverAddress
+                                                port = bean.serverPort
+                                                if (!bean.username.isNullOrBlank()) {
+                                                    users = listOf(
+                                                        HTTPInboundConfigurationObject.AccountObject()
+                                                            .apply {
+                                                                user = bean.username
+                                                                pass = bean.password
+                                                            })
+                                                }
+                                            })
                                 })
                             if (bean.tls) {
                                 streamSettings = StreamSettingsObject().apply {
@@ -423,45 +421,43 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                         } else if (bean is StandardV2RayBean) {
                             if (bean is VMessBean) {
                                 protocol = "vmess"
-                                settings = LazyOutboundConfigurationObject(
-                                    this,
+                                settings = LazyOutboundConfigurationObject(this,
                                     VMessOutboundConfigurationObject().apply {
                                         vnext = listOf(
                                             VMessOutboundConfigurationObject.ServerObject().apply {
-                                                    address = bean.serverAddress
-                                                    port = bean.serverPort
-                                                    users =
-                                                        listOf(VMessOutboundConfigurationObject.ServerObject.UserObject()
-                                                            .apply {
-                                                                id = bean.uuidOrGenerate()
-                                                                alterId = bean.alterId
-                                                                security =
-                                                                    bean.encryption.takeIf { it.isNotBlank() }
-                                                                        ?: "auto"
-                                                                level = 8
-                                                            })
-                                                })
+                                                address = bean.serverAddress
+                                                port = bean.serverPort
+                                                users = listOf(
+                                                    VMessOutboundConfigurationObject.ServerObject.UserObject()
+                                                        .apply {
+                                                            id = bean.uuidOrGenerate()
+                                                            alterId = bean.alterId
+                                                            security =
+                                                                bean.encryption.takeIf { it.isNotBlank() }
+                                                                    ?: "auto"
+                                                            level = 8
+                                                        })
+                                            })
                                     })
                             } else if (bean is VLESSBean) {
                                 protocol = "vless"
-                                settings = LazyOutboundConfigurationObject(
-                                    this,
+                                settings = LazyOutboundConfigurationObject(this,
                                     VLESSOutboundConfigurationObject().apply {
                                         vnext = listOf(
                                             VLESSOutboundConfigurationObject.ServerObject().apply {
-                                                    address = bean.serverAddress
-                                                    port = bean.serverPort
-                                                    users =
-                                                        listOf(VLESSOutboundConfigurationObject.ServerObject.UserObject()
-                                                            .apply {
-                                                                id = bean.uuidOrGenerate()
-                                                                encryption = bean.encryption
-                                                                level = 8
-                                                                if (bean.security == "xtls") {
-                                                                    flow = bean.flow
-                                                                }
-                                                            })
-                                                })
+                                                address = bean.serverAddress
+                                                port = bean.serverPort
+                                                users = listOf(
+                                                    VLESSOutboundConfigurationObject.ServerObject.UserObject()
+                                                        .apply {
+                                                            id = bean.uuidOrGenerate()
+                                                            encryption = bean.encryption
+                                                            level = 8
+                                                            if (bean.security == "xtls") {
+                                                                flow = bean.flow
+                                                            }
+                                                        })
+                                            })
                                     })
                             }
 
@@ -594,11 +590,10 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                             }
                         } else if (bean is ShadowsocksBean) {
                             protocol = "shadowsocks"
-                            settings = LazyOutboundConfigurationObject(
-                                this,
+                            settings = LazyOutboundConfigurationObject(this,
                                 ShadowsocksOutboundConfigurationObject().apply {
-                                    servers =
-                                        listOf(ShadowsocksOutboundConfigurationObject.ServerObject()
+                                    servers = listOf(
+                                        ShadowsocksOutboundConfigurationObject.ServerObject()
                                             .apply {
                                                 address = bean.serverAddress
                                                 port = bean.serverPort
@@ -608,12 +603,10 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                 })
                         } else if (bean is TrojanBean) {
                             protocol = "trojan"
-                            settings = LazyOutboundConfigurationObject(
-                                this,
+                            settings = LazyOutboundConfigurationObject(this,
                                 TrojanOutboundConfigurationObject().apply {
-                                    servers =
-                                        listOf(TrojanOutboundConfigurationObject.ServerObject()
-                                            .apply {
+                                    servers = listOf(
+                                        TrojanOutboundConfigurationObject.ServerObject().apply {
                                                 address = bean.serverAddress
                                                 port = bean.serverPort
                                                 password = bean.password
@@ -661,8 +654,7 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                 listen = "127.0.0.1"
                                 port = localPort
                                 protocol = "socks"
-                                settings = LazyInboundConfigurationObject(
-                                    this,
+                                settings = LazyInboundConfigurationObject(this,
                                     SocksInboundConfigurationObject().apply {
                                         auth = "noauth"
                                         udp = true
@@ -744,8 +736,7 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                 outbounds.add(OutboundObject().apply {
                     tag = "reverse-out-${rule.id}"
                     protocol = "freedom"
-                    settings = LazyOutboundConfigurationObject(
-                        this,
+                    settings = LazyOutboundConfigurationObject(this,
                         FreedomOutboundConfigurationObject().apply {
                             redirect = rule.redirect
                         })
@@ -772,8 +763,7 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
             tag = TAG_DIRECT
             protocol = "freedom"
             if (useFakeDns) {
-                settings = LazyOutboundConfigurationObject(
-                    this,
+                settings = LazyOutboundConfigurationObject(this,
                     FreedomOutboundConfigurationObject().apply {
                         domainStrategy = "UseIP"
                     })
@@ -826,8 +816,7 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                 listen = "127.0.0.1"
                 port = DataStore.localDNSPort
                 protocol = "dokodemo-door"
-                settings = LazyInboundConfigurationObject(
-                    this,
+                settings = LazyInboundConfigurationObject(this,
                     DokodemoDoorInboundConfigurationObject().apply {
                         address = if (!localDns.first().isIpAddress()) {
                             "1.1.1.1"
@@ -843,8 +832,7 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                 protocol = "dns"
                 tag = TAG_DNS_OUT
                 if (useLocalDns) {
-                    settings = LazyOutboundConfigurationObject(
-                        this,
+                    settings = LazyOutboundConfigurationObject(this,
                         DNSOutboundConfigurationObject().apply {
                             var dns = localDns.first()
                             if (dns.contains(":")) {
@@ -967,7 +955,6 @@ fun buildCustomConfig(proxy: ProxyEntity): V2rayBuildResult {
 
     val dnsArr = config.getJSONObject("dns")?.getJSONArray("servers")
         ?.map { gson.fromJson(it.toString(), DnsObject.StringOrServerObject::class.java) }
-    val ipv6Route = DataStore.ipv6Route
     var useFakeDns = false
 
     val requireHttp = Build.VERSION.SDK_INT <= Build.VERSION_CODES.M || DataStore.requireHttp
@@ -981,21 +968,26 @@ fun buildCustomConfig(proxy: ProxyEntity): V2rayBuildResult {
             DataStore.dnsModeFinal = DnsMode.FAKEDNS_LOCAL
             useFakeDns = true
 
-            config.set("fakedns", JSONArray(
-                listOf(
-                    JSONObject(gson.toJson(FakeDnsObject().apply {
-                        ipPool = "${VpnService.FAKEDNS_VLAN4_CLIENT}/15"
-                        poolSize = 65535
-                    }))
-                )
-            ).apply {
-                if (ipv6Route) {
-                    add(JSONObject(gson.toJson(FakeDnsObject().apply {
-                        ipPool = "${VpnService.FAKEDNS_VLAN6_CLIENT}/18"
-                        poolSize = 65535
-                    })))
-                }
-            })
+            config.set("fakedns", JSONObject(gson.toJson(FakeDnsObject().apply {
+                ipPool = "${VpnService.FAKEDNS_VLAN4_CLIENT}/15"
+                poolSize = 65535
+            })))
+
+            /* config.set("fakedns", JSONArray(
+                 listOf(
+                     JSONObject(gson.toJson(FakeDnsObject().apply {
+                         ipPool = "${VpnService.FAKEDNS_VLAN4_CLIENT}/15"
+                         poolSize = 65535
+                     }))
+                 )
+             ).apply {
+                 if (ipv6Route) {
+                     add(JSONObject(gson.toJson(FakeDnsObject().apply {
+                         ipPool = "${VpnService.FAKEDNS_VLAN6_CLIENT}/18"
+                         poolSize = 65535
+                     })))
+                 }
+             })*/
         } else {
             DataStore.dnsModeFinal = DnsMode.LOCAL
         }
@@ -1110,7 +1102,9 @@ fun buildCustomConfig(proxy: ProxyEntity): V2rayBuildResult {
     if (requireTransproxy) {
 
         val transInbound = inbounds.find { it.tag == TAG_TRANS }?.apply {
-            if (protocol != "dokodemo-door") error("Inbound $tag with type $protocol, excepted dokodemo-door.")
+            if (protocol != "dokodemo-door") error(
+                "Inbound $tag with type $protocol, excepted dokodemo-door."
+            )
             listen = bind
             port = DataStore.transproxyPort
         }
@@ -1122,8 +1116,7 @@ fun buildCustomConfig(proxy: ProxyEntity): V2rayBuildResult {
                 listen = bind
                 port = DataStore.transproxyPort
                 protocol = "dokodemo-door"
-                settings = LazyInboundConfigurationObject(
-                    this,
+                settings = LazyInboundConfigurationObject(this,
                     DokodemoDoorInboundConfigurationObject().apply {
                         network = "tcp,udp"
                         followRedirect = true

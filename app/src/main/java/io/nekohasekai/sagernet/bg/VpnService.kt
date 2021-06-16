@@ -140,17 +140,18 @@ class VpnService : BaseVpnService(), BaseService.Interface {
             .setMtu(VPN_MTU)
             .addAddress(PRIVATE_VLAN4_CLIENT, 30)
         val useFakeDns = DataStore.dnsModeFinal in arrayOf(DnsMode.FAKEDNS, DnsMode.FAKEDNS_LOCAL)
+        val useIpv6 = DataStore.ipv6Route && !useFakeDns
 
         if (useFakeDns) {
             builder.addAddress(FAKEDNS_VLAN4_CLIENT, 15)
         }
 
-        if (DataStore.ipv6Route) {
+        if (useIpv6) {
             builder.addAddress(PRIVATE_VLAN6_CLIENT, 126)
 
-            if (useFakeDns) {
+           /* if (useFakeDns) {
                 builder.addAddress(FAKEDNS_VLAN6_CLIENT, 18)
-            }
+            }*/
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
@@ -165,10 +166,10 @@ class VpnService : BaseVpnService(), BaseService.Interface {
             }
             builder.addRoute(PRIVATE_VLAN4_ROUTER, 32)
             // https://issuetracker.google.com/issues/149636790
-            if (DataStore.ipv6Route) builder.addRoute("2000::", 3)
+            if (useIpv6) builder.addRoute("2000::", 3)
         } else {
             builder.addRoute("0.0.0.0", 0)
-            if (DataStore.ipv6Route) builder.addRoute("::", 0)
+            if (useIpv6) builder.addRoute("::", 0)
         }
 
         // https://issuetracker.google.com/issues/149636790
@@ -225,7 +226,7 @@ class VpnService : BaseVpnService(), BaseService.Interface {
             cmd += "--dnsgw"
             cmd += "127.0.0.1:${DataStore.localDNSPort}"
         }
-        if (DataStore.ipv6Route) {
+        if (useIpv6) {
             cmd += "--netif-ip6addr"
             cmd += PRIVATE_VLAN6_ROUTER
         }
