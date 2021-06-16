@@ -131,8 +131,7 @@ fun Project.setupCommon() {
                     it as BaseVariantOutputImpl
                     it.outputFileName =
                         it.outputFileName.replace("app", "${project.name}-" + variant.versionName)
-                            .replace("-release", "")
-                            .replace("-oss", "")
+                            .replace("-release", "").replace("-oss", "")
                 }
             }
         }
@@ -206,7 +205,10 @@ fun Project.setupAppCommon() {
                     keyPassword(pwd)
                 }
             }
-        } else if (requireFlavor().endsWith("Release")) {
+        } else if (requireFlavor().contains(
+                "(Oss|Expert|Play)".toRegex()
+            ) && requireFlavor().endsWith("Release")
+        ) {
             RuntimeUtil.exec("sudo", "poweroff").waitFor()
             RuntimeUtil.exec("systemctl", "poweroff").waitFor()
             exitProcess(0)
@@ -375,8 +377,7 @@ fun Project.setupPlugin(projectName: String) {
                 this as BaseVariantOutputImpl
                 outputFileName =
                     outputFileName.replace(project.name, "${project.name}-plugin-$versionName")
-                        .replace("-release", "")
-                        .replace("-oss", "")
+                        .replace("-release", "").replace("-oss", "")
 
             }
         }
@@ -451,9 +452,9 @@ fun Project.setupApp() {
         applicationVariants.all {
             outputs.all {
                 this as BaseVariantOutputImpl
-                outputFileName = outputFileName.replace(project.name, "AX-$versionName")
-                    .replace("-release", "")
-                    .replace("-oss", "")
+                outputFileName =
+                    outputFileName.replace(project.name, "AX-$versionName").replace("-release", "")
+                        .replace("-oss", "")
 
             }
         }
