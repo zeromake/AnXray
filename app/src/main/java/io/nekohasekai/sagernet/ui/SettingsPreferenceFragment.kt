@@ -119,6 +119,7 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
         val enableMux = findPreference<Preference>(Key.ENABLE_MUX)!!
         val enableMuxForAll = findPreference<Preference>(Key.ENABLE_MUX_FOR_ALL)!!
         val muxConcurrency = findPreference<EditTextPreference>(Key.MUX_CONCURRENCY)!!
+        val tcpKeepAliveInterval = findPreference<EditTextPreference>(Key.TCP_KEEP_ALIVE_INTERVAL)!!
 
         val bypassLan = findPreference<Preference>(Key.BYPASS_LAN)!!
 
@@ -198,6 +199,7 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
         enableMux.onPreferenceChangeListener = reloadListener
         enableMuxForAll.onPreferenceChangeListener = reloadListener
         muxConcurrency.onPreferenceChangeListener = reloadListener
+        tcpKeepAliveInterval.onPreferenceChangeListener = reloadListener
         bypassLan.onPreferenceChangeListener = reloadListener
         forceShadowsocksRust.onPreferenceChangeListener = reloadListener
 
