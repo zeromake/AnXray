@@ -55,7 +55,7 @@ object Theme {
         if (isExpert) {
             context.setTheme(getTheme())
         } else {
-            context.setTheme(R.style.Theme_SagerNet)
+            context.setTheme(R.style.Theme_SagerNet_Black)
         }
     }
 
@@ -85,7 +85,7 @@ object Theme {
             GREY -> R.style.Theme_SagerNet_Grey
             BLUE_GREY -> R.style.Theme_SagerNet_BlueGrey
             BLACK -> R.style.Theme_SagerNet_Black
-            else -> R.style.Theme_SagerNet
+            else -> R.style.Theme_SagerNet_Black
         }
     }
 
