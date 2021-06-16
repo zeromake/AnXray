@@ -1,11 +1,11 @@
-# AnXray for Android
+# AnXray
 
 [![API](https://img.shields.io/badge/API-21%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=21)
 [![Releases](https://img.shields.io/github/downloads/XTLS/AnXray/total.svg)](https://github.com/SagerNet/SagerNet/releases)
 [![Language: Kotlin](https://img.shields.io/github/languages/top/XTLS/AnXray.svg)](https://github.com/SagerNet/SagerNet/search?l=kotlin)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-orange.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-The universal proxy toolchain for Android, written in Kotlin. Xray version :)
+Another Xray for Android.
 
 ## DOCUMENTS
 
@@ -22,8 +22,8 @@ The application is designed to be used whenever possible.
 * Shadowsocks
 * ShadowsocksR
 * VMess
-* VLESS
-* Trojan
+* VLESS with XTLS support
+* Trojan with XTLS support
 * Trojan-Go ( trojan-go-plugin )
 * NaïveProxy ( naive-plugin )
 * Ping Tunnel ( pingtunnel-plugin )
@@ -40,7 +40,7 @@ The application is designed to be used whenever possible.
 #### Features
 
 * Full basic features
-* V2Ray WebSocket browser forwarding
+* Xray WebSocket browser dialer
 * Option to change the notification update interval
 * A Chinese apps scanner (based on dex classpath scanning, so it may be slower)
 * Proxy chain
