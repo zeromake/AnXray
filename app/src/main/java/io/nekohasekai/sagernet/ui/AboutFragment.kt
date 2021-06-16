@@ -147,7 +147,7 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
                         .subText(versionName)
                         .setOnClickAction {
                             requireContext().launchCustomTab(
-                                "https://github.com/SagerNet/SagerNet/releases"
+                                "https://github.com/XTLS/AnXray/releases"
                             )
                         }
                         .build()
@@ -236,7 +236,7 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
                         .text(R.string.github)
                         .setOnClickAction {
                             requireContext().launchCustomTab(
-                                "https://github.com/SagerNet/SagerNet"
+                                "https://github.com/XTLS/AnXray"
 
                             )
                         }
