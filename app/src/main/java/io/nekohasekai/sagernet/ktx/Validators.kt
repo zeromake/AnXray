@@ -24,9 +24,12 @@ package io.nekohasekai.sagernet.ktx
 import androidx.annotation.RawRes
 import cn.hutool.core.lang.Validator
 import cn.hutool.core.net.NetUtil
+import cn.hutool.json.JSONObject
 import com.github.shadowsocks.plugin.PluginConfiguration
 import io.nekohasekai.sagernet.R
+import io.nekohasekai.sagernet.database.ProfileManager
 import io.nekohasekai.sagernet.fmt.AbstractBean
+import io.nekohasekai.sagernet.fmt.config.ConfigBean
 import io.nekohasekai.sagernet.fmt.http.HttpBean
 import io.nekohasekai.sagernet.fmt.shadowsocks.ShadowsocksBean
 import io.nekohasekai.sagernet.fmt.shadowsocksr.ShadowsocksRBean
@@ -43,7 +46,10 @@ class ResultInsecure(@RawRes val textRes: Int) : ValidateResult
 private val ssSecureList = "(gcm|poly1305)".toRegex()
 
 fun AbstractBean.isInsecure(): ValidateResult {
-    if (Validator.isIpv4(serverAddress) && NetUtil.isInnerIP(serverAddress) || serverAddress in arrayOf("localhost")) {
+    if (Validator.isIpv4(serverAddress) && NetUtil.isInnerIP(serverAddress) || serverAddress in arrayOf(
+            "localhost"
+        )
+    ) {
         return ResultLocal
     }
     if (this is ShadowsocksBean) {
@@ -67,6 +73,7 @@ fun AbstractBean.isInsecure(): ValidateResult {
         if (type == "kcp" && mKcpSeed.isBlank()) {
             return ResultInsecure(R.raw.mkcp_no_seed)
         }
+        if (allowInsecure) return ResultInsecure(R.raw.insecure)
         if (alterId > 0) return ResultDeprecated(R.raw.vmess_md5_auth)
     } else if (this is VLESSBean) {
         if (security in arrayOf("", "none")) {
@@ -74,6 +81,17 @@ fun AbstractBean.isInsecure(): ValidateResult {
         }
         if (type == "kcp" && mKcpSeed.isBlank()) {
             return ResultInsecure(R.raw.mkcp_no_seed)
+        }
+        if (allowInsecure) return ResultInsecure(R.raw.insecure)
+    } else if (this is ConfigBean) {
+        try {
+            val profiles = ProfileManager.parseJSON(JSONObject(content))
+            val results = profiles.map { it.isInsecure() }
+            (results.find { it is ResultInsecure } ?: results.find { it is ResultDeprecated }
+            ?: results.find { it is ResultLocal })?.also {
+                return it
+            }
+        } catch (ignored: Exception) {
         }
     }
     return ResultSecure

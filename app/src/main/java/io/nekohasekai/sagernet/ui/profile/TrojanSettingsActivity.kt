@@ -23,6 +23,7 @@ package io.nekohasekai.sagernet.ui.profile
 
 import android.os.Bundle
 import androidx.preference.EditTextPreference
+import androidx.preference.SwitchPreference
 import com.takisoft.preferencex.PreferenceFragmentCompat
 import com.takisoft.preferencex.SimpleMenuPreference
 import io.nekohasekai.sagernet.Key
@@ -46,6 +47,7 @@ class TrojanSettingsActivity : ProfileSettingsActivity<TrojanBean>() {
         DataStore.serverSNI = sni
         DataStore.serverALPN = alpn
         DataStore.serverFlow = flow
+        DataStore.serverAllowInsecure = allowInsecure
     }
 
     override fun TrojanBean.serialize() {
@@ -57,12 +59,14 @@ class TrojanSettingsActivity : ProfileSettingsActivity<TrojanBean>() {
         sni = DataStore.serverSNI
         alpn = DataStore.serverALPN
         flow = DataStore.serverFlow
+        allowInsecure = DataStore.serverAllowInsecure
     }
 
     lateinit var security: SimpleMenuPreference
     lateinit var tlsSni: EditTextPreference
     lateinit var tlsAlpn: EditTextPreference
     lateinit var xtlsFlow: SimpleMenuPreference
+    lateinit var allowInsecure: SwitchPreference
 
     override fun PreferenceFragmentCompat.createPreferences(
         savedInstanceState: Bundle?,
@@ -80,6 +84,7 @@ class TrojanSettingsActivity : ProfileSettingsActivity<TrojanBean>() {
         tlsSni = findPreference(Key.SERVER_SNI)!!
         tlsAlpn = findPreference(Key.SERVER_ALPN)!!
         xtlsFlow = findPreference(Key.SERVER_FLOW)!!
+        allowInsecure = findPreference(Key.SERVER_ALLOW_INSECURE)!!
 
         updateTle(security.value)
         security.setOnPreferenceChangeListener { _, newValue ->

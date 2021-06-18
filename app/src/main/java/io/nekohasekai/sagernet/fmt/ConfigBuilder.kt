@@ -423,8 +423,9 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                 protocol = "vmess"
                                 settings = LazyOutboundConfigurationObject(this,
                                     VMessOutboundConfigurationObject().apply {
-                                        vnext = listOf(
-                                            VMessOutboundConfigurationObject.ServerObject().apply {
+                                        vnext =
+                                            listOf(VMessOutboundConfigurationObject.ServerObject()
+                                                .apply {
                                                 address = bean.serverAddress
                                                 port = bean.serverPort
                                                 users = listOf(
@@ -443,8 +444,9 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                 protocol = "vless"
                                 settings = LazyOutboundConfigurationObject(this,
                                     VLESSOutboundConfigurationObject().apply {
-                                        vnext = listOf(
-                                            VLESSOutboundConfigurationObject.ServerObject().apply {
+                                        vnext =
+                                            listOf(VLESSOutboundConfigurationObject.ServerObject()
+                                                .apply {
                                                 address = bean.serverAddress
                                                 port = bean.serverPort
                                                 users = listOf(
@@ -482,6 +484,10 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                             certificate = bean.certificates.split("\n")
                                                 .filter { it.isNotBlank() }
                                         })
+                                    }
+
+                                    if (bean.allowInsecure) {
+                                        allowInsecure = true
                                     }
 
                                     xrayFingerprint?.also {
@@ -632,11 +638,15 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                                         fingerprint = it
                                     }
                                 }
+
+                                if (bean.allowInsecure) {
+                                    settings.allowInsecure = true
+                                }
+
                                 when (security) {
                                     "tls" -> tlsSettings = settings
                                     "xtls" -> xtlsSettings = settings
                                 }
-
                             }
                         }
                         if (index == 0 && proxyEntity.needCoreMux() && DataStore.enableMux) {

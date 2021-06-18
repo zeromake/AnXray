@@ -33,4 +33,7 @@
 	url = https://github.com/nekohasekai/AndroidLibXrayLite
 [submodule "external/editorkit"]
 	path = external/editorkit
-	url = https://github.com/nekohasekai/Squircle-IDE
+	url = https://github.com/SagerNet/editorkit
+[submodule "external/preferencex"]
+	path = external/preferencex
+	url = https://github.com/SagerNet/preferencex-android

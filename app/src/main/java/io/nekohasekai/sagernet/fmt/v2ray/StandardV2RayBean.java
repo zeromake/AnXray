@@ -147,23 +147,27 @@ public abstract class StandardV2RayBean extends AbstractBean {
      */
     public String alpn;
 
-    // --------------------------------------- //
-
-    public String grpcServiceName;
-    public Boolean grpcMultiMode;
-
-    public String certificates;
-
-    public Boolean wsUseBrowserForwarder;
-
-    // --------------------------------------- //
-
     /**
      * XTLS 的流控方式。可选值为 xtls-rprx-direct、xtls-rprx-splice 等。
      * <p>
      * 若使用 XTLS，此项不可省略，否则无此项。此项不可为空字符串。
      */
     public String flow;
+
+    // --------------------------------------- //
+
+    public String grpcServiceName;
+    public Boolean grpcMultiMode;
+    public String earlyDataHeaderName;
+
+    public String certificates;
+
+    // --------------------------------------- //
+
+    public Boolean wsUseBrowserForwarder;
+    public Boolean allowInsecure;
+
+    // --------------------------------------- //
 
     @Override
     public void initDefaultValues() {
@@ -191,12 +195,13 @@ public abstract class StandardV2RayBean extends AbstractBean {
         if (wsUseBrowserForwarder == null) wsUseBrowserForwarder = false;
         if (certificates == null) certificates = "";
         if (StrUtil.isBlank(flow)) flow = "";
+        if (allowInsecure == null) allowInsecure = false;
 
     }
 
     @Override
     public void serialize(ByteBufferOutput output) {
-        output.writeInt(1);
+        output.writeInt(3);
         super.serialize(output);
 
         output.writeString(uuid);
@@ -244,12 +249,14 @@ public abstract class StandardV2RayBean extends AbstractBean {
                 output.writeString(sni);
                 output.writeString(alpn);
                 output.writeString(certificates);
+                output.writeBoolean(allowInsecure);
                 break;
             }
             case "xtls": {
                 output.writeString(sni);
                 output.writeString(alpn);
                 output.writeString(flow);
+                output.writeBoolean(allowInsecure);
                 break;
             }
         }
@@ -305,16 +312,23 @@ public abstract class StandardV2RayBean extends AbstractBean {
                 if (version >= 1) {
                     certificates = input.readString();
                 }
+                if (version >= 3) {
+                    allowInsecure = input.readBoolean();
+                }
                 break;
             }
             case "xtls": {
                 sni = input.readString();
                 alpn = input.readString();
                 flow = input.readString();
+                if (version >= 3) {
+                    certificates = input.readString();
+                }
+                if (version >= 3) {
+                    allowInsecure = input.readBoolean();
+                }
             }
         }
-
-        initDefaultValues();
     }
 
     @Override
@@ -322,6 +336,7 @@ public abstract class StandardV2RayBean extends AbstractBean {
         if (!(other instanceof StandardV2RayBean)) return;
         StandardV2RayBean bean = ((StandardV2RayBean) other);
         bean.wsUseBrowserForwarder = wsUseBrowserForwarder;
+        bean.allowInsecure = allowInsecure;
     }
 
     public String uuidOrGenerate() {
