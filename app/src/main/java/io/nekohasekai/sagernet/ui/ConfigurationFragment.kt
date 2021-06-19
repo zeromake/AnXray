@@ -30,6 +30,7 @@ import android.os.Bundle
 import android.text.format.Formatter
 import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -90,13 +91,15 @@ class ConfigurationFragment @JvmOverloads constructor(
             runCatching {
                 val mTitleTextView = Toolbar::class.java.getDeclaredField("mTitleTextView")
                     .apply { isAccessible = true }.get(toolbar) as TextView
-                mTitleTextView.text = mTitleTextView.text.toString().uppercase()
                 mTitleTextView.typeface = TypefaceCompat.createFromResourcesFontFile(
                     view.context,
                     resources,
                     R.font.bgothm,
                     "res/font/bgothm.ttf",
                     mTitleTextView.typeface.style
+                )
+                mTitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_PX,
+                    (mTitleTextView.textSize * 1.25).toFloat()
                 )
             }.onFailure {
                 Logs.w(it)
