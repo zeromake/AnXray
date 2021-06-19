@@ -247,7 +247,7 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
                         .text(R.string.telegram)
                         .setOnClickAction {
                             requireContext().launchCustomTab(
-                                "https://t.me/SagerNet"
+                                "https://t.me/AnXray"
                             )
                         }
                         .build())

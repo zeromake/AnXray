@@ -9,7 +9,7 @@ Another Xray for Android.
 
 ## DOCUMENTS
 
-https://sagernet.org
+https://anxray.org
 
 ### Protocols
 

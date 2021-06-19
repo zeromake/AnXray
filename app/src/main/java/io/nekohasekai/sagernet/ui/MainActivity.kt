@@ -117,7 +117,7 @@ class MainActivity : ThemedActivity(), SagerConnection.Callback,
             R.id.nav_route -> displayFragment(RouteFragment())
             R.id.nav_settings -> displayFragment(SettingsFragment())
             R.id.nav_faq -> {
-                launchCustomTab("https://sagernet.org/")
+                launchCustomTab("https://anxray.org/")
                 return false
             }
             R.id.nav_about -> displayFragment(AboutFragment())

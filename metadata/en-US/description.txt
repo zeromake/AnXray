@@ -1,5 +1,5 @@
 <h2 id="documents">DOCUMENTS</h2>
-<p><a href="https://sagernet.org">https://sagernet.org</a></p>
+<p><a href="https://anxray.org">https://anxray.org</a></p>
 <h3 id="protocols">Protocols</h3>
 <p>The application is designed to be used whenever possible.</p>
 <h4 id="proxy">Proxy</h4>
