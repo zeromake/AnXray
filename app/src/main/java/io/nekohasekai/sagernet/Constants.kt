@@ -117,6 +117,7 @@ object Key {
     const val SERVER_FLOW = "serverFlow"
     const val SERVER_QUIC_SECURITY = "serverQuicSecurity"
     const val SERVER_WS_BROWSER_FORWARDING = "serverWsBrowserForwarding"
+    const val SERVER_CONFIG = "serverConfig"
 
     const val SERVER_SECURITY_CATEGORY = "serverSecurityCategory"
     const val SERVER_WS_CATEGORY = "serverWsCategory"
