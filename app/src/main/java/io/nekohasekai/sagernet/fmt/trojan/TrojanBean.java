@@ -53,7 +53,7 @@ public class TrojanBean extends AbstractBean {
         if (sni == null) sni = "";
         if (alpn == null) alpn = "";
         if (flow == null) flow = "";
-        if (allowInsecure == null) allowInsecure = true;
+        if (allowInsecure == null) allowInsecure = false;
 
     }
 
