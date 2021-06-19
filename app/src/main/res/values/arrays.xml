@@ -557,7 +557,7 @@
     </string-array>
 
     <string-array name="config_type_entry">
-        <item>V2Ray</item>
+        <item>Xray</item>
         <item>Trojan-Go</item>
     </string-array>
     <string-array name="config_type_value">

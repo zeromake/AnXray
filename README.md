@@ -46,7 +46,7 @@ The application is designed to be used whenever possible.
 * Proxy chain
 * Advanced routing with outbound profile selection
 * Reverse proxy
-* Custom config (V2Ray / Trojan-Go)
+* Custom config (Xray / Trojan-Go)
 
 ## OPEN SOURCE LICENSES
 

@@ -52,7 +52,7 @@
     <string name="allow_access_sum">将入站绑定至 0.0.0.0</string>
     <string name="cag_dns">DNS 设置</string>
     <string name="cag_route">路由设置</string>
-    <string name="force_ss_rust">不要使用 V2Ray 路由 Shadowsocks</string>
+    <string name="force_ss_rust">不要使用 Xray 路由 Shadowsocks</string>
     <string name="force_ss_sum">强制所有 Shadowsocks 节点使用和 Shadowsocks Android 相同的 shadowsocks-rust 后端</string>
     <string name="inbound_settings">入站设置</string>
     <string name="general_settings">软件设置</string>
