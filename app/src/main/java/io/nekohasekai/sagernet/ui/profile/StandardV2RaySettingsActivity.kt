@@ -322,8 +322,7 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
     fun updateTle(tle: String) {
         val isTLS = tle == "tls"
         val isXTLS = tle == "xtls"
-        securityCategory.isVisible = isTLS
-
+        securityCategory.isVisible = isTLS || isXTLS
         xtlsFlow.isVisible = isXTLS
         if (isXTLS) {
             if (DataStore.serverFlow !in xtlsFlowValue) {

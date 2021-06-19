@@ -201,7 +201,7 @@ public abstract class StandardV2RayBean extends AbstractBean {
 
     @Override
     public void serialize(ByteBufferOutput output) {
-        output.writeInt(3);
+        output.writeInt(4);
         super.serialize(output);
 
         output.writeString(uuid);
@@ -256,6 +256,7 @@ public abstract class StandardV2RayBean extends AbstractBean {
                 output.writeString(sni);
                 output.writeString(alpn);
                 output.writeString(flow);
+                output.writeString(certificates);
                 output.writeBoolean(allowInsecure);
                 break;
             }
@@ -309,24 +310,16 @@ public abstract class StandardV2RayBean extends AbstractBean {
             case "tls": {
                 sni = input.readString();
                 alpn = input.readString();
-                if (version >= 1) {
-                    certificates = input.readString();
-                }
-                if (version >= 3) {
-                    allowInsecure = input.readBoolean();
-                }
+                if (version >= 1) certificates = input.readString();
+                if (version >= 3) allowInsecure = input.readBoolean();
                 break;
             }
             case "xtls": {
                 sni = input.readString();
                 alpn = input.readString();
                 flow = input.readString();
-                if (version >= 3) {
-                    certificates = input.readString();
-                }
-                if (version >= 3) {
-                    allowInsecure = input.readBoolean();
-                }
+                if (version >= 4) certificates = input.readString();
+                if (version >= 3) allowInsecure = input.readBoolean();
             }
         }
     }
