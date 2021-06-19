@@ -1,6 +1,4 @@
 <resources>
-    <string name="app_desc">适用于 Android 之通用代理工具, 使用 Kotlin 编写。</string>
-
     <string name="project">项目</string>
     <string name="github">源代码</string>
     <string name="telegram">Telegram 更新频道</string>
@@ -301,7 +299,7 @@
     <string name="config_settings">配置设置</string>
     <string name="custom_config">自定义配置</string>
     <string name="multi_mode_sum">这是一个实验性选项. 可能不会被长期保留, 也不保证跨版本兼容.</string>
-    <string name="xray_utls_fingerprint">XRay uTLS 指纹</string>
+    <string name="xray_utls_fingerprint">Xray uTLS 指纹</string>
     <string name="night_mode">夜间模式</string>
     <string name="enable">启用</string>
     <string name="auto">自动</string>
