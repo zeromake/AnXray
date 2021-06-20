@@ -68,16 +68,10 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
 
         view.findViewById<MaterialCardView>(R.id.title_card).setOnClickListener {
             val time = SystemClock.elapsedRealtime()
-            val oldTime = eTime
-            eTime = time
-            when {
-                time - oldTime >= 1000 -> eCount = 1
-                eCount < 3 -> eCount++
-                else -> {
-                    eCount = 0
-                    requireContext().launchCustomTab("https://github.com/XTLS/Xray-core")
-                }
+            if (time - eTime >= 1000L) eCount = 1 else if (++eCount >= 3) {
+                requireContext().launchCustomTab("https://github.com/XTLS")
             }
+            eTime = time
         }
 
         parentFragmentManager.beginTransaction().replace(R.id.about_fragment_holder, AboutContent())
