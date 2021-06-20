@@ -683,6 +683,9 @@ object ProfileManager {
                                     alpn?.also {
                                         v2rayBean.alpn = it.joinToString(",")
                                     }
+                                    allowInsecure?.also {
+                                        v2rayBean.allowInsecure = it
+                                    }
                                 }
                             }
                         }
