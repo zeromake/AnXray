@@ -12,7 +12,7 @@
         <entry key="app/src/main/res/drawable/ic_service_idle.xml" value="0.2255" />
         <entry key="app/src/main/res/drawable/ic_service_stopped.xml" value="0.2035" />
         <entry key="app/src/main/res/drawable/navigation_icon.xml" value="0.1715" />
-        <entry key="app/src/main/res/layout/layout_about.xml" value="0.33" />
+        <entry key="app/src/main/res/layout/layout_about.xml" value="0.13333333333333333" />
         <entry key="app/src/main/res/layout/layout_appbar.xml" value="0.2490740740740741" />
         <entry key="app/src/main/res/layout/layout_apps.xml" value="0.2490740740740741" />
         <entry key="app/src/main/res/layout/layout_apps_item.xml" value="0.2490740740740741" />
@@ -43,8 +43,7 @@
         <entry key="app/src/main/res/menu/profile_config_menu.xml" value="0.2636752136752137" />
         <entry key="app/src/main/res/menu/scanner_menu.xml" value="0.2636752136752137" />
         <entry key="app/src/main/res/menu/socks_share_menu.xml" value="0.2636752136752137" />
-        <entry key="app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.135" />
-        <entry key="app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml" value="0.205" />
+        <entry key="app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml" value="0.186" />
         <entry key="app/src/main/res/xml/brook_preferences.xml" value="0.32135416666666666" />
         <entry key="app/src/main/res/xml/chain_preferences.xml" value="0.32135416666666666" />
         <entry key="app/src/main/res/xml/config_preferences.xml" value="0.33" />
@@ -63,9 +62,6 @@
         <entry key="naive-plugin/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.20925925925925926" />
       </map>
     </option>
-  </component>
-  <component name="FrameworkDetectionExcludesConfiguration">
-    <file type="web" url="file://$PROJECT_DIR$" />
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="11" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/build/classes" />
