@@ -28,6 +28,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
+import android.os.SystemClock
 import android.provider.Settings
 import android.text.util.Linkify
 import android.view.View
@@ -62,7 +63,21 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
         ViewCompat.setOnApplyWindowInsetsListener(view, ListHolderListener)
         toolbar.setTitle(R.string.menu_about)
 
+        var eTime = 0L
+        var eCount = 0
+
         view.findViewById<MaterialCardView>(R.id.title_card).setOnClickListener {
+            val time = SystemClock.elapsedRealtime()
+            val oldTime = eTime
+            eTime = time
+            when {
+                time - oldTime >= 1000 -> eCount = 1
+                eCount < 3 -> eCount++
+                else -> {
+                    eCount = 0
+                    requireContext().launchCustomTab("https://github.com/XTLS/Xray-core")
+                }
+            }
         }
 
         parentFragmentManager.beginTransaction().replace(R.id.about_fragment_holder, AboutContent())
@@ -81,11 +96,11 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
     class AboutContent : MaterialAboutFragment() {
 
         val requestIgnoreBatteryOptimizations = registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult()) { (resultCode, _) ->
+            ActivityResultContracts.StartActivityForResult()
+        ) { (resultCode, _) ->
             if (resultCode == Activity.RESULT_OK) {
                 parentFragmentManager.beginTransaction()
-                    .replace(R.id.about_fragment_holder, AboutContent())
-                    .commitAllowingStateLoss()
+                    .replace(R.id.about_fragment_holder, AboutContent()).commitAllowingStateLoss()
             }
         }
 
@@ -95,12 +110,17 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
             runOnDefaultDispatcher {
                 val logDir = File(app.cacheDir, "log")
                 logDir.mkdir()
-                val logFile = File.createTempFile("SagerNet-", ".log", logDir)
+                val logFile = File.createTempFile("AnXray-", ".log", logDir)
                 logFile.outputStream().use { out ->
                     PrintWriter(out.bufferedWriter()).use { writer ->
-                        writer.println("SagerNet ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) on API ${Build.VERSION.SDK_INT}")
-                        @Suppress("DEPRECATION")
-                        writer.println("ABI ${Build.CPU_ABI} (${Build.SUPPORTED_ABIS.joinToString(", ")})")
+                        writer.println("AnXray ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) on API ${Build.VERSION.SDK_INT}")
+                        @Suppress("DEPRECATION") writer.println(
+                            "ABI ${Build.CPU_ABI} (${
+                                Build.SUPPORTED_ABIS.joinToString(
+                                    ", "
+                                )
+                            })"
+                        )
                         writer.flush()
                         try {
                             Runtime.getRuntime()
@@ -114,18 +134,12 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
                 }
                 startActivity(
                     Intent.createChooser(
-                        Intent(Intent.ACTION_SEND)
-                            .setType("text/x-log")
-                            .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            .putExtra(
-                                Intent.EXTRA_STREAM,
-                                FileProvider.getUriForFile(
-                                    context,
-                                    app.packageName + ".log",
-                                    logFile
+                        Intent(Intent.ACTION_SEND).setType("text/x-log")
+                            .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION).putExtra(
+                                Intent.EXTRA_STREAM, FileProvider.getUriForFile(
+                                    context, app.packageName + ".log", logFile
                                 )
-                            ),
-                        context.getString(R.string.abc_shareactionprovider_share_with)
+                            ), context.getString(R.string.abc_shareactionprovider_share_with)
                     )
                 )
             }
@@ -138,128 +152,102 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
                 versionName += "-${BuildConfig.FLAVOR}"
             }
 
-            return MaterialAboutList.Builder()
-                .addCard(MaterialAboutCard.Builder()
-                    .outline(false)
-                    .addItem(MaterialAboutActionItem.Builder()
-                        .icon(R.drawable.ic_baseline_update_24)
-                        .text(R.string.app_version)
-                        .subText(versionName)
-                        .setOnClickAction {
+            return MaterialAboutList.Builder().addCard(
+                MaterialAboutCard.Builder().outline(false).addItem(
+                    MaterialAboutActionItem.Builder().icon(R.drawable.ic_baseline_update_24)
+                        .text(R.string.app_version).subText(versionName).setOnClickAction {
                             requireContext().launchCustomTab(
                                 "https://github.com/XTLS/AnXray/releases"
                             )
-                        }
-                        .build()
-                    )
-                    .addItem(MaterialAboutActionItem.Builder()
+                        }.build()
+                ).addItem(
+                    MaterialAboutActionItem.Builder()
                         .icon(R.drawable.ic_baseline_airplanemode_active_24)
                         .text(getString(R.string.version_x, "Xray-core"))
-                        .subText(Libv2ray.getVersion())
-                        .setOnClickAction { }
-                        .build()
-                    )
-                    .apply {
-                        for (plugin in PluginManager.fetchPlugins()) {
-                            try {
-                                addItem(MaterialAboutActionItem.Builder()
-                                    .icon(R.drawable.ic_baseline_nfc_24)
-                                    .text(getString(R.string.version_x, plugin.id))
-                                    .subText("v" + plugin.versionName)
-                                    .setOnClickAction {
-                                        startActivity(Intent().apply {
-                                            action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-                                            data =
-                                                Uri.fromParts(
-                                                    "package",
-                                                    plugin.packageName,
-                                                    null
-                                                )
-                                        })
-                                    }
-                                    .build()
-                                )
-                            } catch (e: Exception) {
-                                Logs.w(e)
-                            }
-                        }
-                    }
-                    .addItem(MaterialAboutActionItem.Builder()
-                        .icon(R.drawable.ic_baseline_bug_report_24)
-                        .text(R.string.logcat)
-                        .subText(R.string.logcat_summary)
-                        .setOnClickAction { exportLog() }
-                        .build()
-                    )
-                    .apply {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                            val pm = app.getSystemService(Context.POWER_SERVICE) as PowerManager
-                            if (!pm.isIgnoringBatteryOptimizations(app.packageName)) {
-                                addItem(
-                                    MaterialAboutActionItem.Builder()
-                                        .icon(R.drawable.ic_baseline_running_with_errors_24)
-                                        .text(R.string.ignore_battery_optimizations)
-                                        .subText(R.string.ignore_battery_optimizations_sum)
-                                        .setOnClickAction {
-                                            requestIgnoreBatteryOptimizations.launch(
-                                                Intent(
-                                                    Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                                                    Uri.parse("package:${app.packageName}")
-                                                ))
-                                        }
-                                        .build()
-                                )
-                            }
-                        }
-                        if (isDefaultFlavor) {
+                        .subText(Libv2ray.getVersion()).setOnClickAction {
+                            requireContext().launchCustomTab(
+                                "https://github.com/XTLS/Xray-core/releases"
+                            )
+                        }.build()
+                ).apply {
+                    for (plugin in PluginManager.fetchPlugins()) {
+                        try {
                             addItem(
                                 MaterialAboutActionItem.Builder()
-                                    .icon(R.drawable.ic_baseline_card_giftcard_24)
-                                    .text(R.string.donate)
-                                    .subText(R.string.donate_info)
+                                    .icon(R.drawable.ic_baseline_nfc_24)
+                                    .text(getString(R.string.version_x, plugin.id))
+                                    .subText("v" + plugin.versionName).setOnClickAction {
+                                        startActivity(Intent().apply {
+                                            action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                                            data = Uri.fromParts(
+                                                "package", plugin.packageName, null
+                                            )
+                                        })
+                                    }.build()
+                            )
+                        } catch (e: Exception) {
+                            Logs.w(e)
+                        }
+                    }
+                }.addItem(
+                    MaterialAboutActionItem.Builder().icon(R.drawable.ic_baseline_bug_report_24)
+                        .text(R.string.logcat).subText(R.string.logcat_summary)
+                        .setOnClickAction { exportLog() }.build()
+                ).apply {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        val pm = app.getSystemService(Context.POWER_SERVICE) as PowerManager
+                        if (!pm.isIgnoringBatteryOptimizations(app.packageName)) {
+                            addItem(
+                                MaterialAboutActionItem.Builder()
+                                    .icon(R.drawable.ic_baseline_running_with_errors_24)
+                                    .text(R.string.ignore_battery_optimizations)
+                                    .subText(R.string.ignore_battery_optimizations_sum)
                                     .setOnClickAction {
-                                        requireContext().launchCustomTab(
-                                            "https://opencollective.com/sagernet"
+                                        requestIgnoreBatteryOptimizations.launch(
+                                            Intent(
+                                                Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                                                Uri.parse("package:${app.packageName}")
+                                            )
                                         )
-                                    }
-                                    .build()
+                                    }.build()
                             )
                         }
                     }
-                    .build()
-                )
-                .addCard(MaterialAboutCard.Builder()
-                    .outline(false)
-                    .title(R.string.project)
-                    .addItem(MaterialAboutActionItem.Builder()
-                        .icon(R.drawable.ic_baseline_sanitizer_24)
-                        .text(R.string.github)
-                        .setOnClickAction {
+                    if (isDefaultFlavor) {
+                        addItem(
+                            MaterialAboutActionItem.Builder()
+                                .icon(R.drawable.ic_baseline_card_giftcard_24).text(R.string.donate)
+                                .subText(R.string.donate_info).setOnClickAction {
+                                    requireContext().launchCustomTab(
+                                        "https://opencollective.com/sagernet"
+                                    )
+                                }.build()
+                        )
+                    }
+                }.build()
+            ).addCard(
+                MaterialAboutCard.Builder().outline(false).title(R.string.project).addItem(
+                    MaterialAboutActionItem.Builder().icon(R.drawable.ic_baseline_sanitizer_24)
+                        .text(R.string.github).setOnClickAction {
                             requireContext().launchCustomTab(
                                 "https://github.com/XTLS/AnXray"
 
                             )
-                        }
-                        .build()
-                    )
-                    .addItem(MaterialAboutActionItem.Builder()
-                        .icon(R.drawable.ic_qu_shadowsocks_foreground)
-                        .text(R.string.telegram)
-                        .setOnClickAction {
+                        }.build()
+                ).addItem(
+                    MaterialAboutActionItem.Builder().icon(R.drawable.ic_qu_shadowsocks_foreground)
+                        .text(R.string.telegram).setOnClickAction {
                             requireContext().launchCustomTab(
                                 "https://t.me/AnXray"
                             )
-                        }
-                        .build())
-                    .addItem(MaterialAboutActionItem.Builder()
-                        .icon(R.drawable.ic_action_copyright)
-                        .text(R.string.oss_licenses)
-                        .setOnClickAction {
+                        }.build()
+                ).addItem(
+                    MaterialAboutActionItem.Builder().icon(R.drawable.ic_action_copyright)
+                        .text(R.string.oss_licenses).setOnClickAction {
                             startActivity(Intent(context, LicenseActivity::class.java))
-                        }
-                        .build())
-                    .build())
-                .build()
+                        }.build()
+                ).build()
+            ).build()
 
         }
 
