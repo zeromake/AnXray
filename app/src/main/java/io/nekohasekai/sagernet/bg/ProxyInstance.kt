@@ -30,6 +30,7 @@ import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import io.nekohasekai.sagernet.IPv6Mode
 import io.nekohasekai.sagernet.SagerNet
 import io.nekohasekai.sagernet.database.DataStore
 import io.nekohasekai.sagernet.database.ProxyEntity
@@ -145,7 +146,12 @@ class ProxyInstance(val profile: ProxyEntity) {
             when (bean.type) {
                 "trojan-go" -> {
                     initPlugin("trojan-go-plugin")
-                    config = buildV2RayConfig(ProxyEntity(type = ProxyEntity.TYPE_TROJAN_GO, trojanGoBean = TrojanGoBean().applyDefaultValues()))
+                    config = buildV2RayConfig(
+                        ProxyEntity(
+                            type = ProxyEntity.TYPE_TROJAN_GO,
+                            trojanGoBean = TrojanGoBean().applyDefaultValues()
+                        )
+                    )
                     val (port, _) = config.index[0].entries.first()
                     pluginConfigs[port] = buildCustomTrojanConfig(bean.content, port)
                 } //"v2ray" -> {
@@ -368,7 +374,7 @@ class ProxyInstance(val profile: ProxyEntity) {
             Os.unsetenv("XRAY_BROWSER_DIALER")
         }
 
-        v2rayPoint.runLoop(DataStore.preferIpv6)
+        v2rayPoint.runLoop(DataStore.ipv6Mode >= IPv6Mode.PREFER)
 
         if (config.requireWs) {
             runOnDefaultDispatcher {
