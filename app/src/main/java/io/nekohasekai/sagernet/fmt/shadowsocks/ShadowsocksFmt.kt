@@ -32,8 +32,15 @@ import io.nekohasekai.sagernet.ktx.*
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import cn.hutool.json.JSONObject as HSONObject
 
-val methodsV2fly = arrayOf(
-    "none", "aes-128-gcm", "aes-256-gcm", "chacha20-ietf-poly1305"
+val methodsXray = arrayOf(
+    "none",
+    "aes-128-gcm",
+    "aes-256-gcm",
+    "chacha20-ietf-poly1305",
+    "aes-256-cfb",
+    "aes-128-cfb",
+    "chacha20",
+    "chacha20-ietf"
 )
 
 fun PluginConfiguration.fixInvalidParams() {

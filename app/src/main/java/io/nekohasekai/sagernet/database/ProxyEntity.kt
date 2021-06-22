@@ -44,7 +44,7 @@ import io.nekohasekai.sagernet.fmt.pingtunnel.toUri
 import io.nekohasekai.sagernet.fmt.relaybaton.RelayBatonBean
 import io.nekohasekai.sagernet.fmt.relaybaton.toUri
 import io.nekohasekai.sagernet.fmt.shadowsocks.ShadowsocksBean
-import io.nekohasekai.sagernet.fmt.shadowsocks.methodsV2fly
+import io.nekohasekai.sagernet.fmt.shadowsocks.methodsXray
 import io.nekohasekai.sagernet.fmt.shadowsocks.toUri
 import io.nekohasekai.sagernet.fmt.shadowsocksr.ShadowsocksRBean
 import io.nekohasekai.sagernet.fmt.shadowsocksr.toUri
@@ -298,7 +298,7 @@ data class ProxyEntity(
             Logs.d("Requiring plugin ${bean.plugin}")
             return true
         }
-        if (bean.method !in methodsV2fly) return true
+        if (bean.method !in methodsXray) return true
         return false
     }
 
