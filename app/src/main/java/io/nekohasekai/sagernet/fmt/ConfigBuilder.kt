@@ -26,7 +26,6 @@ import cn.hutool.core.util.NumberUtil
 import cn.hutool.json.JSONArray
 import cn.hutool.json.JSONObject
 import com.google.gson.JsonSyntaxException
-import io.nekohasekai.sagernet.BuildConfig
 import io.nekohasekai.sagernet.DnsMode
 import io.nekohasekai.sagernet.IPv6Mode
 import io.nekohasekai.sagernet.bg.VpnService
@@ -170,7 +169,7 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
         }
 
         log = LogObject().apply {
-            loglevel = if (BuildConfig.DEBUG) "debug" else "warning"
+            loglevel = if (DataStore.enableLog) "debug" else "warning"
         }
 
         policy = PolicyObject().apply {
@@ -1003,8 +1002,13 @@ fun buildCustomConfig(proxy: ProxyEntity): V2rayBuildResult {
         ?.map { gson.fromJson(it.toString(), InboundObject::class.java) }?.toMutableList()
         ?: ArrayList()
 
-    val dnsArr = config.getJSONObject("dns")?.getJSONArray("servers")
-        ?.map { gson.fromJson(it.toString(), DnsObject.StringOrServerObject::class.java) }
+    val dnsArr = config.getJSONObject("dns")?.getJSONArray("servers")?.map {
+        if (it is String) DnsObject.StringOrServerObject().apply {
+            valueX = it
+        } else DnsObject.StringOrServerObject().apply {
+            valueY = gson.fromJson(it.toString(), DnsObject.ServerObject::class.java)
+        }
+    }
     var useFakeDns = false
 
     val requireHttp = Build.VERSION.SDK_INT <= Build.VERSION_CODES.M || DataStore.requireHttp

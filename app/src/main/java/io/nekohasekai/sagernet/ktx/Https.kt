@@ -22,11 +22,9 @@
 package io.nekohasekai.sagernet.ktx
 
 import android.os.Build
-import androidx.fragment.app.Fragment
 import cn.hutool.core.lang.Validator
-import io.nekohasekai.sagernet.bg.BaseService
+import io.nekohasekai.sagernet.SagerNet
 import io.nekohasekai.sagernet.database.DataStore
-import io.nekohasekai.sagernet.ui.MainActivity
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import java.net.InetSocketAddress
@@ -38,16 +36,15 @@ val okHttpClient = OkHttpClient.Builder()
     .build()
 
 private lateinit var proxyClient: OkHttpClient
-fun Fragment.createHttpClient(): OkHttpClient {
-    if ((activity as MainActivity?)?.state != BaseService.State.Connected) {
-        return okHttpClient
-    }
+fun createProxyClient(): OkHttpClient {
+    if (!SagerNet.started) return okHttpClient
 
     if (!::proxyClient.isInitialized) {
         proxyClient = okHttpClient.newBuilder().proxy(requireProxy()).build()
     }
     return proxyClient
 }
+
 
 fun requireProxy(): Proxy {
     return if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {

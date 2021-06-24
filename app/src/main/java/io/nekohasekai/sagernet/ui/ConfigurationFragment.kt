@@ -1009,8 +1009,7 @@ class ConfigurationFragment @JvmOverloads constructor(
 
             fun export(link: String) {
                 val success = SagerNet.trySetPrimaryClip(link)
-                (activity as MainActivity).snackbar()
-                    .setText(if (success) R.string.action_export_msg else R.string.action_export_err)
+                (activity as MainActivity).snackbar(if (success) R.string.action_export_msg else R.string.action_export_err)
                     .show()
             }
 
@@ -1026,7 +1025,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                     }
                 } catch (e: Exception) {
                     Logs.w(e)
-                    (activity as MainActivity).snackbar().setText(e.readableMessage).show()
+                    (activity as MainActivity).snackbar(e.readableMessage).show()
                     return true
                 }
                 return true

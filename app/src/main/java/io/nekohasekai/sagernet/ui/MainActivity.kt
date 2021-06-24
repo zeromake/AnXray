@@ -128,19 +128,22 @@ class MainActivity : ThemedActivity(), SagerConnection.Callback,
     }
 
     var state = BaseService.State.Idle
+    var doStop = false
 
     private fun changeState(
         state: BaseService.State,
         msg: String? = null,
         animate: Boolean = false,
     ) {
+        SagerNet.started = state == BaseService.State.Connected
+
         binding.fab.changeState(state, this.state, animate)
         binding.stats.changeState(state)
         if (msg != null) snackbar(getString(R.string.vpn_error, msg)).show()
         this.state = state
     }
 
-    fun snackbar(text: CharSequence = ""): Snackbar {
+    override fun snackbar(text: CharSequence): Snackbar {
         return Snackbar.make(binding.coordinator, text, Snackbar.LENGTH_LONG).apply {
             if (binding.fab.isShown) {
                 anchorView = binding.fab
@@ -168,7 +171,7 @@ class MainActivity : ThemedActivity(), SagerConnection.Callback,
     }
 
     private val connect = registerForActivityResult(VpnRequestActivity.StartService()) {
-        if (it) snackbar().setText(R.string.vpn_permission_denied).show()
+        if (it) snackbar(R.string.vpn_permission_denied).show()
     }
 
     override fun trafficUpdated(profileId: Long, stats: TrafficStats) {
