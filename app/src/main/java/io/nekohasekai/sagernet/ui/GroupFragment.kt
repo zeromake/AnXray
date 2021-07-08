@@ -175,7 +175,7 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group), Toolbar.OnMenuItem
         runOnDefaultDispatcher {
             createProxyClient().newCall(
                 Request.Builder().url(proxyGroup.subscriptionLink)
-                    .header("User-Agent", "SagerNet/${BuildConfig.VERSION_NAME}").build()
+                    .header("User-Agent", "AnXray/${BuildConfig.VERSION_NAME}").build()
             ).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     runOnMainDispatcher {
