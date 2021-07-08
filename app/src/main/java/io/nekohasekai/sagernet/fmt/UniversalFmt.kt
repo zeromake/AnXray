@@ -26,14 +26,14 @@ import cn.hutool.core.codec.Base64Encoder
 import io.nekohasekai.sagernet.database.ProxyEntity
 
 fun parseUniversal(link: String): AbstractBean {
-    val type = link.substringAfter("sn://").substringBefore(":")
+    val type = link.substringAfter("ax://").substringBefore(":")
     return ProxyEntity(type = TypeMap[type] ?: error("Type $type not found")).apply {
         putByteArray(Base64Decoder.decode(link.substringAfter(":").substringAfter(":")))
     }.requireBean()
 }
 
 fun AbstractBean.toUniversalLink(): String {
-    var link = "sn://"
+    var link = "ax://"
     link += TypeMap.reversed[ProxyEntity().putBean(this).type]
     link += ":"
     link += Base64Encoder.encodeUrlSafe(KryoConverters.serialize(this))

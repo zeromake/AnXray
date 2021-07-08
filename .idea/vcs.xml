@@ -7,6 +7,7 @@
   </component>
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/Xray-core" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/external/editorkit" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/external/preferencex" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/external/v2ray-core" vcs="Git" />

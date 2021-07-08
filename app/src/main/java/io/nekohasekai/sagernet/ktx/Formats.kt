@@ -58,7 +58,7 @@ fun parseProxies(text: String, initType: Int = 0, badType: Int = 4): Pair<Int, L
     val entitiesByLine = ArrayList<AbstractBean>()
 
     fun String.parseLink(entities: ArrayList<AbstractBean>) {
-        if (startsWith("sn://")) {
+        if (startsWith("ax://")) {
             Logs.d("Try parse universal link: $this")
             runCatching {
                 entities.add(parseUniversal(this))

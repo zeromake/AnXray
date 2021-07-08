@@ -37,3 +37,6 @@
 [submodule "external/preferencex"]
 	path = external/preferencex
 	url = https://github.com/SagerNet/preferencex-android
+[submodule "external/Xray-core"]
+	path = external/Xray-core
+	url = https://github.com/XTLS/Xray-core

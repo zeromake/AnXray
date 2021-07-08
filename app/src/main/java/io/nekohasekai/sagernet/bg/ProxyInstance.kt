@@ -30,11 +30,8 @@ import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import cn.hutool.core.util.NumberUtil
-import com.v2ray.core.app.observatory.command.GetOutboundStatusRequest
-import com.v2ray.core.app.observatory.command.ObservatoryServiceGrpcKt
-import com.v2ray.core.app.stats.command.GetStatsRequest
-import com.v2ray.core.app.stats.command.StatsServiceGrpcKt
+import com.xray.app.stats.command.GetStatsRequest
+import com.xray.app.stats.command.StatsServiceGrpcKt
 import io.grpc.ManagedChannel
 import io.grpc.StatusException
 import io.nekohasekai.sagernet.IPv6Mode
@@ -81,11 +78,12 @@ class ProxyInstance(val profile: ProxyEntity, val service: BaseService.Interface
 
     lateinit var managedChannel: ManagedChannel
     val statsService by lazy { StatsServiceGrpcKt.StatsServiceCoroutineStub(managedChannel) }
-    val observatoryService by lazy {
-        ObservatoryServiceGrpcKt.ObservatoryServiceCoroutineStub(
-            managedChannel
-        )
-    }
+
+    /* val observatoryService by lazy {
+         ObservatoryServiceGrpcKt.ObservatoryServiceCoroutineStub(
+             managedChannel
+         )
+     }*/
     lateinit var observatoryJob: Job
 
     val pluginPath = hashMapOf<String, InitResult>()
@@ -406,7 +404,7 @@ class ProxyInstance(val profile: ProxyEntity, val service: BaseService.Interface
 
             managedChannel = createChannel()
 
-            if (config.observatoryTags.isNotEmpty()) {
+            /*if (config.observatoryTags.isNotEmpty()) {
                 observatoryJob = launch(Dispatchers.IO) {
                     val interval = 10000L
                     while (isActive) {
@@ -448,7 +446,7 @@ class ProxyInstance(val profile: ProxyEntity, val service: BaseService.Interface
                         delay(interval)
                     }
                 }
-            }
+            }*/
 
             if (config.requireWs) {
                 runOnDefaultDispatcher {
