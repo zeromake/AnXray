@@ -22,6 +22,7 @@
 package io.nekohasekai.sagernet.ui
 
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.text.format.DateFormat
 import android.view.Menu
 import android.view.MenuItem
@@ -74,7 +75,7 @@ class AssetsActivity : ThemedActivity() {
             adapter.reloadAssets()
             binding.refreshLayout.isRefreshing = false
         }
-        binding.refreshLayout.setColorSchemeColors(loadColor(R.attr.primaryOrTextPrimary))
+        binding.refreshLayout.setColorSchemeColors(getColorAttr(R.attr.primaryOrTextPrimary))
 
         undoManager = UndoSnackbarManager(this, adapter)
 
@@ -105,7 +106,7 @@ class AssetsActivity : ThemedActivity() {
         }).attachToRecyclerView(binding.recyclerView)
     }
 
-    override fun snackbar(text: CharSequence): Snackbar {
+    override fun snackbarInternal(text: CharSequence): Snackbar {
         return Snackbar.make(layout.coordinator, text, Snackbar.LENGTH_LONG)
     }
 
@@ -118,7 +119,11 @@ class AssetsActivity : ThemedActivity() {
 
     val importFile = registerForActivityResult(ActivityResultContracts.GetContent()) { file ->
         if (file != null) {
-            val fileName = file.pathSegments.last().substringAfterLast('/').substringAfter(':')
+            val fileName = contentResolver.query(file, null, null, null, null)?.use { cursor ->
+                cursor.moveToFirst()
+                cursor.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME).let(cursor::getString)
+            }?.takeIf { it.isNotBlank() } ?: file.pathSegments.last().substringAfterLast('/')
+                .substringAfter(':')
 
             if (!fileName.endsWith(".dat")) {
                 MaterialAlertDialogBuilder(this).setTitle(R.string.error_title)
@@ -221,8 +226,7 @@ class AssetsActivity : ThemedActivity() {
 
         fun bind(file: File) {
             this.file = file
-            binding.root.setOnClickListener {
-            }
+            binding.root.setOnClickListener {}
 
             binding.assetName.text = file.name
             val versionFile = File(file.parentFile, "${file.nameWithoutExtension}.version.txt")

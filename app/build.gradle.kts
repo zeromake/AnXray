@@ -4,6 +4,7 @@ plugins {
     id("kotlin-kapt")
     id("kotlin-parcelize")
     id("com.mikepenz.aboutlibraries.plugin")
+    id("com.google.protobuf")
 }
 
 setupApp()
@@ -31,7 +32,7 @@ dependencies {
     implementation(fileTree("libs"))
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.0")
-    implementation("androidx.core:core-ktx:1.5.0")
+    implementation("androidx.core:core-ktx:1.6.0")
     implementation("androidx.activity:activity-ktx:1.2.3")
     implementation("androidx.fragment:fragment-ktx:1.3.5")
     implementation("androidx.browser:browser:1.3.0")
@@ -46,10 +47,10 @@ dependencies {
     implementation(project(":external:preferencex:preferencex-simplemenu"))
     implementation(project(":external:preferencex:preferencex-colorpicker"))
 
-    implementation("com.google.android.material:material:1.3.0")
-    implementation("cn.hutool:hutool-core:5.7.2")
-    implementation("cn.hutool:hutool-json:5.7.2")
-    implementation("cn.hutool:hutool-crypto:5.7.2")
+    implementation("com.google.android.material:material:1.4.0")
+    implementation("cn.hutool:hutool-core:5.7.3")
+    implementation("cn.hutool:hutool-json:5.7.3")
+    implementation("cn.hutool:hutool-crypto:5.7.3")
     implementation("com.google.code.gson:gson:2.8.7")
     implementation("com.google.zxing:core:3.4.1")
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.2")
@@ -78,6 +79,9 @@ dependencies {
     implementation("editorkit:editorkit:2.0.0")
     implementation("editorkit:feature-editor:2.0.0")
     implementation("editorkit:language-json:2.0.0")
+
+    implementation(project(":library:proto-stub"))
+    implementation("io.grpc:grpc-okhttp:1.39.0")
 
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:1.1.5")
 }

@@ -38,7 +38,9 @@ import android.system.OsConstants
 import android.util.TypedValue
 import android.view.View
 import androidx.annotation.AttrRes
+import androidx.annotation.ColorRes
 import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -48,9 +50,11 @@ import androidx.recyclerview.widget.RecyclerView
 import cn.hutool.core.net.URLDecoder
 import cn.hutool.core.net.URLEncoder
 import cn.hutool.core.util.CharsetUtil
+import com.google.android.material.color.MaterialColors
 import io.nekohasekai.sagernet.BuildConfig
 import io.nekohasekai.sagernet.R
 import io.nekohasekai.sagernet.SagerNet
+import io.nekohasekai.sagernet.database.DataStore
 import io.nekohasekai.sagernet.ui.MainActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -124,8 +128,7 @@ fun Context.listenForPackageChanges(onetime: Boolean = true, callback: () -> Uni
     }
 
 val PackageInfo.signaturesCompat
-    get() =
-        if (Build.VERSION.SDK_INT >= 28) signingInfo.apkContentsSigners else @Suppress("DEPRECATION") signatures
+    get() = if (Build.VERSION.SDK_INT >= 28) signingInfo.apkContentsSigners else @Suppress("DEPRECATION") signatures
 
 /**
  * Based on: https://stackoverflow.com/a/26348729/2245107
@@ -150,11 +153,10 @@ private val parseNumericAddress by lazy {
     }
 }
 
-fun String?.parseNumericAddress(): InetAddress? = Os.inet_pton(OsConstants.AF_INET, this)
-    ?: Os.inet_pton(OsConstants.AF_INET6, this)?.let {
+fun String?.parseNumericAddress(): InetAddress? =
+    Os.inet_pton(OsConstants.AF_INET, this) ?: Os.inet_pton(OsConstants.AF_INET6, this)?.let {
         if (Build.VERSION.SDK_INT >= 29) it else parseNumericAddress.invoke(
-            null,
-            this
+            null, this
         ) as InetAddress
     }
 
@@ -240,9 +242,13 @@ fun Fragment.needReload() {
     }
 }
 
-fun Context.loadColor(@AttrRes attr: Int): Int {
+fun Context.getColour(@ColorRes colorRes: Int): Int {
+    return ContextCompat.getColor(this, colorRes)
+}
+
+fun Context.getColorAttr(@AttrRes resId: Int): Int {
     return ContextCompat.getColor(this, TypedValue().also {
-        theme.resolveAttribute(attr, it, true)
+        theme.resolveAttribute(resId, it, true)
     }.resourceId)
 }
 

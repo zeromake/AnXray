@@ -19,60 +19,20 @@
  *                                                                            *
  ******************************************************************************/
 
-package io.nekohasekai.sagernet.fmt.config;
+package io.nekohasekai.sagernet.fmt.internal;
 
-import androidx.annotation.NonNull;
-
-import com.esotericsoftware.kryo.io.ByteBufferInput;
-import com.esotericsoftware.kryo.io.ByteBufferOutput;
-
-import cn.hutool.core.util.StrUtil;
 import io.nekohasekai.sagernet.fmt.AbstractBean;
 
-public class ConfigBean extends AbstractBean {
-
-    public String type;
-    public String content;
+public abstract class InternalBean extends AbstractBean {
 
     @Override
-    public String displayName() {
-        if (StrUtil.isNotBlank(name)) {
-            return name;
-        } else {
-            return "Config " + Math.abs(hashCode());
-        }
+    public String displayAddress() {
+        return "";
     }
 
     @Override
-    public void initDefaultValues() {
-        super.initDefaultValues();
-        if (name == null) name = "";
-        if (type == null) type = "v2ray";
-        if (content == null) content = "{}";
-    }
-
-    @Override
-    public void serialize(ByteBufferOutput output) {
-        output.writeInt(0);
-
-        output.writeString(type);
-        output.writeString(content);
-    }
-
-    @Override
-    public void deserialize(ByteBufferInput input) {
-        int version = input.readInt();
-
-        type = input.readString();
-        content = input.readString();
-
-        initDefaultValues();
-    }
-
-    @NonNull
-    @Override
-    public AbstractBean clone() {
-        return null;
+    public boolean canTCPing() {
+        return false;
     }
 
 }

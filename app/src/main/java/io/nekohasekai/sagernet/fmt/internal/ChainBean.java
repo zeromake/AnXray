@@ -19,13 +19,14 @@
  *                                                                            *
  ******************************************************************************/
 
-package io.nekohasekai.sagernet.fmt.chain;
+package io.nekohasekai.sagernet.fmt.internal;
 
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -33,7 +34,7 @@ import cn.hutool.core.util.StrUtil;
 import io.nekohasekai.sagernet.fmt.AbstractBean;
 import io.nekohasekai.sagernet.fmt.KryoConverters;
 
-public class ChainBean extends AbstractBean {
+public class ChainBean extends InternalBean {
 
     public List<Long> proxies;
 
@@ -52,7 +53,7 @@ public class ChainBean extends AbstractBean {
         if (name == null) name = "";
 
         if (proxies == null) {
-            proxies = new LinkedList<>();
+            proxies = new ArrayList<>();
         }
     }
 
@@ -73,16 +74,15 @@ public class ChainBean extends AbstractBean {
             input.readInt();
         }
         int length = input.readInt();
-        proxies = new LinkedList<>();
+        proxies = new ArrayList<>();
         for (int i = 0; i < length; i++) {
             proxies.add(input.readLong());
         }
-        initDefaultValues();
     }
 
     @NotNull
     @Override
-    public AbstractBean clone() {
+    public ChainBean clone() {
         return KryoConverters.deserialize(new ChainBean(), KryoConverters.serialize(this));
     }
 }

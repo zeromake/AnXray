@@ -32,7 +32,6 @@ import android.os.SystemClock
 import android.provider.Settings
 import android.text.util.Linkify
 import android.view.View
-import android.widget.TextView
 import androidx.activity.result.component1
 import androidx.activity.result.component2
 import androidx.activity.result.contract.ActivityResultContracts
@@ -43,9 +42,9 @@ import com.danielstone.materialaboutlibrary.MaterialAboutFragment
 import com.danielstone.materialaboutlibrary.items.MaterialAboutActionItem
 import com.danielstone.materialaboutlibrary.model.MaterialAboutCard
 import com.danielstone.materialaboutlibrary.model.MaterialAboutList
-import com.google.android.material.card.MaterialCardView
 import io.nekohasekai.sagernet.BuildConfig
 import io.nekohasekai.sagernet.R
+import io.nekohasekai.sagernet.databinding.LayoutAboutBinding
 import io.nekohasekai.sagernet.ktx.*
 import io.nekohasekai.sagernet.plugin.PluginManager
 import io.nekohasekai.sagernet.widget.ListHolderListener
@@ -60,13 +59,15 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val binding = LayoutAboutBinding.bind(view)
+
         ViewCompat.setOnApplyWindowInsetsListener(view, ListHolderListener)
         toolbar.setTitle(R.string.menu_about)
 
         var eTime = 0L
         var eCount = 0
 
-        view.findViewById<MaterialCardView>(R.id.title_card).setOnClickListener {
+        binding.titleCard.setOnClickListener {
             val time = SystemClock.elapsedRealtime()
             if (time - eTime >= 1000L) eCount = 1 else if (++eCount >= 3) {
                 requireContext().launchCustomTab("https://github.com/XTLS")
@@ -79,10 +80,9 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
 
         runOnDefaultDispatcher {
             val license = view.context.assets.open("LICENSE").bufferedReader().readText()
-            val licenseText = view.findViewById<TextView>(R.id.license)
             onMainDispatcher {
-                licenseText.text = license
-                Linkify.addLinks(licenseText, Linkify.EMAIL_ADDRESSES or Linkify.WEB_URLS)
+                binding.license.text = license
+                Linkify.addLinks(binding.license, Linkify.EMAIL_ADDRESSES or Linkify.WEB_URLS)
             }
         }
     }
@@ -157,12 +157,8 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
                 ).addItem(
                     MaterialAboutActionItem.Builder()
                         .icon(R.drawable.ic_baseline_airplanemode_active_24)
-                        .text(getString(R.string.version_x, "Xray-core"))
-                        .subText(Libv2ray.getVersion()).setOnClickAction {
-                            requireContext().launchCustomTab(
-                                "https://github.com/XTLS/Xray-core/releases"
-                            )
-                        }.build()
+                        .text(getString(R.string.version_x, "v2ray-core"))
+                        .subText(Libv2ray.getVersion()).setOnClickAction { }.build()
                 ).apply {
                     for (plugin in PluginManager.fetchPlugins()) {
                         try {

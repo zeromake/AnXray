@@ -48,7 +48,7 @@ import io.nekohasekai.sagernet.database.ProfileManager
 import io.nekohasekai.sagernet.database.ProxyEntity
 import io.nekohasekai.sagernet.databinding.LayoutAddEntityBinding
 import io.nekohasekai.sagernet.databinding.LayoutProfileBinding
-import io.nekohasekai.sagernet.fmt.chain.ChainBean
+import io.nekohasekai.sagernet.fmt.internal.ChainBean
 import io.nekohasekai.sagernet.ktx.*
 import io.nekohasekai.sagernet.ui.ProfileSelectActivity
 import java.util.*
@@ -92,7 +92,9 @@ class ChainSettingsActivity : ProfileSettingsActivity<ChainBean>(R.layout.layout
         configurationAdapter = ProxiesAdapter()
         configurationList.adapter = configurationAdapter
 
-        ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, ItemTouchHelper.START) {
+        ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN, ItemTouchHelper.START
+        ) {
             override fun getSwipeDirs(
                 recyclerView: RecyclerView,
                 viewHolder: RecyclerView.ViewHolder,
@@ -113,7 +115,9 @@ class ChainSettingsActivity : ProfileSettingsActivity<ChainBean>(R.layout.layout
                 target: RecyclerView.ViewHolder,
             ): Boolean {
                 return if (target !is ProfileHolder) false else {
-                    configurationAdapter.move(viewHolder.bindingAdapterPosition, target.bindingAdapterPosition)
+                    configurationAdapter.move(
+                        viewHolder.bindingAdapterPosition, target.bindingAdapterPosition
+                    )
                     true
                 }
             }
@@ -230,13 +234,15 @@ class ChainSettingsActivity : ProfileSettingsActivity<ChainBean>(R.layout.layout
             if (resultCode == Activity.RESULT_OK) runOnDefaultDispatcher {
                 DataStore.dirty = true
 
-                val profile =
-                    ProfileManager.getProfile(data!!.getLongExtra(ProfileSelectActivity.EXTRA_PROFILE_ID, 0))!!
+                val profile = ProfileManager.getProfile(
+                    data!!.getLongExtra(
+                        ProfileSelectActivity.EXTRA_PROFILE_ID, 0
+                    )
+                )!!
 
                 if (!testProfileAllowed(profile)) {
                     onMainDispatcher {
-                        MaterialAlertDialogBuilder(this@ChainSettingsActivity)
-                            .setTitle(R.string.circular_reference)
+                        MaterialAlertDialogBuilder(this@ChainSettingsActivity).setTitle(R.string.circular_reference)
                             .setMessage(R.string.circular_reference_sum)
                             .setPositiveButton(android.R.string.ok, null).show()
                     }
@@ -254,16 +260,22 @@ class ChainSettingsActivity : ProfileSettingsActivity<ChainBean>(R.layout.layout
             }
         }
 
-    inner class AddHolder(val binding: LayoutAddEntityBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class AddHolder(val binding: LayoutAddEntityBinding) :
+        RecyclerView.ViewHolder(binding.root) {
         fun bind() {
             binding.root.setOnClickListener {
                 replacing = 0
-                selectProfileForAdd.launch(Intent(this@ChainSettingsActivity, ProfileSelectActivity::class.java))
+                selectProfileForAdd.launch(
+                    Intent(
+                        this@ChainSettingsActivity, ProfileSelectActivity::class.java
+                    )
+                )
             }
         }
     }
 
-    inner class ProfileHolder(binding: LayoutProfileBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class ProfileHolder(binding: LayoutProfileBinding) :
+        RecyclerView.ViewHolder(binding.root) {
 
         val profileName = binding.profileName
         val profileType = binding.profileType
@@ -294,13 +306,18 @@ class ChainSettingsActivity : ProfileSettingsActivity<ChainBean>(R.layout.layout
             val showTraffic = rx + tx != 0L
             trafficText.isVisible = showTraffic
             if (showTraffic) {
-                trafficText.text =
-                    itemView.context.getString(R.string.traffic, Formatter.formatFileSize(itemView.context, tx), Formatter.formatFileSize(itemView.context, rx))
+                trafficText.text = itemView.context.getString(
+                    R.string.traffic,
+                    Formatter.formatFileSize(itemView.context, tx),
+                    Formatter.formatFileSize(itemView.context, rx)
+                )
             }
 
             editButton.setOnClickListener {
                 replacing = bindingAdapterPosition
-                selectProfileForAdd.launch(Intent(this@ChainSettingsActivity, ProfileSelectActivity::class.java).apply {
+                selectProfileForAdd.launch(Intent(
+                    this@ChainSettingsActivity, ProfileSelectActivity::class.java
+                ).apply {
                     putExtra(ProfileSelectActivity.EXTRA_SELECTED, proxyEntity)
                 })
             }
@@ -322,8 +339,7 @@ class ChainSettingsActivity : ProfileSettingsActivity<ChainBean>(R.layout.layout
                         shareButton.setColorFilter(Color.WHITE)
 
                         shareLayout.setOnClickListener {
-                            MaterialAlertDialogBuilder(this@ChainSettingsActivity)
-                                .setTitle(R.string.insecure)
+                            MaterialAlertDialogBuilder(this@ChainSettingsActivity).setTitle(R.string.insecure)
                                 .setMessage(resources.openRawResource(validateResult.textRes)
                                     .bufferedReader().use { it.readText() })
                                 .setPositiveButton(android.R.string.ok, null).show().apply {
@@ -342,8 +358,7 @@ class ChainSettingsActivity : ProfileSettingsActivity<ChainBean>(R.layout.layout
                         shareButton.setColorFilter(Color.GRAY)
 
                         shareLayout.setOnClickListener {
-                            MaterialAlertDialogBuilder(this@ChainSettingsActivity)
-                                .setTitle(R.string.deprecated)
+                            MaterialAlertDialogBuilder(this@ChainSettingsActivity).setTitle(R.string.deprecated)
                                 .setMessage(resources.openRawResource(validateResult.textRes)
                                     .bufferedReader().use { it.readText() })
                                 .setPositiveButton(android.R.string.ok, null).show().apply {

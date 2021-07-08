@@ -153,13 +153,11 @@ public class TrojanGoBean extends AbstractBean {
         }
         encryption = input.readString();
         plugin = input.readString();
-
-        initDefaultValues();
     }
 
     @NotNull
     @Override
-    public AbstractBean clone() {
+    public TrojanGoBean clone() {
         return KryoConverters.deserialize(new TrojanGoBean(), KryoConverters.serialize(this));
     }
 }

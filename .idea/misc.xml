@@ -13,6 +13,7 @@
         <entry key="app/src/main/res/drawable/ic_navigation_close.xml" value="0.285" />
         <entry key="app/src/main/res/drawable/ic_service_idle.xml" value="0.2255" />
         <entry key="app/src/main/res/drawable/ic_service_stopped.xml" value="0.2035" />
+        <entry key="app/src/main/res/drawable/ic_social_share.xml" value="0.283" />
         <entry key="app/src/main/res/drawable/navigation_icon.xml" value="0.1715" />
         <entry key="app/src/main/res/layout/layout_about.xml" value="0.13333333333333333" />
         <entry key="app/src/main/res/layout/layout_appbar.xml" value="0.2490740740740741" />
@@ -34,29 +35,36 @@
         <entry key="app/src/main/res/layout/layout_navigation.xml" value="0.19786324786324785" />
         <entry key="app/src/main/res/layout/layout_navigation_black.xml" value="0.19786324786324785" />
         <entry key="app/src/main/res/layout/layout_password_dialog.xml" value="0.32135416666666666" />
+        <entry key="app/src/main/res/layout/layout_process.xml" value="0.2636752136752137" />
         <entry key="app/src/main/res/layout/layout_profile.xml" value="0.32135416666666666" />
         <entry key="app/src/main/res/layout/layout_profile_clash.xml" value="0.2490740740740741" />
         <entry key="app/src/main/res/layout/layout_profile_list.xml" value="0.2636752136752137" />
+        <entry key="app/src/main/res/layout/layout_progress.xml" value="0.2636752136752137" />
         <entry key="app/src/main/res/layout/layout_route.xml" value="0.13333333333333333" />
         <entry key="app/src/main/res/layout/layout_route_item.xml" value="0.5" />
         <entry key="app/src/main/res/layout/layout_scanner.xml" value="0.2490740740740741" />
         <entry key="app/src/main/res/menu/add_group_menu.xml" value="0.2636752136752137" />
         <entry key="app/src/main/res/menu/add_profile_menu.xml" value="0.32135416666666666" />
         <entry key="app/src/main/res/menu/add_route_menu.xml" value="0.2636752136752137" />
+        <entry key="app/src/main/res/menu/export_only_menu.xml" value="0.2636752136752137" />
         <entry key="app/src/main/res/menu/import_asset_menu.xml" value="0.2636752136752137" />
         <entry key="app/src/main/res/menu/main_drawer_menu.xml" value="0.2636752136752137" />
         <entry key="app/src/main/res/menu/per_app_proxy_menu.xml" value="0.2636752136752137" />
         <entry key="app/src/main/res/menu/profile_apply_menu.xml" value="0.2636752136752137" />
         <entry key="app/src/main/res/menu/profile_config_menu.xml" value="0.2636752136752137" />
+        <entry key="app/src/main/res/menu/profile_share_menu.xml" value="0.2636752136752137" />
         <entry key="app/src/main/res/menu/scanner_menu.xml" value="0.2636752136752137" />
-        <entry key="app/src/main/res/menu/socks_share_menu.xml" value="0.2636752136752137" />
+        <entry key="app/src/main/res/menu/socks_share_menu.xml" value="0.1" />
+        <entry key="app/src/main/res/menu/vmess_share_menu.xml" value="0.2636752136752137" />
         <entry key="app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml" value="0.186" />
+        <entry key="app/src/main/res/xml/balancer_preferences.xml" value="0.2636752136752137" />
         <entry key="app/src/main/res/xml/brook_preferences.xml" value="0.32135416666666666" />
         <entry key="app/src/main/res/xml/chain_preferences.xml" value="0.32135416666666666" />
         <entry key="app/src/main/res/xml/config_preferences.xml" value="0.33" />
         <entry key="app/src/main/res/xml/global_preferences.xml" value="1.0" />
         <entry key="app/src/main/res/xml/http_preferences.xml" value="0.32135416666666666" />
         <entry key="app/src/main/res/xml/route_preferences.xml" value="0.33" />
+        <entry key="app/src/main/res/xml/socks_preferences.xml" value="0.2636752136752137" />
         <entry key="app/src/main/res/xml/standard_v2ray_preferences.xml" value="0.33" />
         <entry key="app/src/main/res/xml/trojan_go_preferences.xml" value="0.14316239316239315" />
         <entry key="app/src/main/res/xml/trojan_preferences.xml" value="0.192481884057971" />

@@ -26,33 +26,38 @@ import android.content.Intent
 import android.os.Parcel
 import android.os.Parcelable
 import androidx.room.*
-import cn.hutool.core.lang.Validator
 import io.nekohasekai.sagernet.R
 import io.nekohasekai.sagernet.aidl.TrafficStats
 import io.nekohasekai.sagernet.fmt.AbstractBean
 import io.nekohasekai.sagernet.fmt.KryoConverters
 import io.nekohasekai.sagernet.fmt.brook.BrookBean
-import io.nekohasekai.sagernet.fmt.brook.toUri
-import io.nekohasekai.sagernet.fmt.chain.ChainBean
-import io.nekohasekai.sagernet.fmt.config.ConfigBean
+import io.nekohasekai.sagernet.fmt.buildV2RayConfig
+import io.nekohasekai.sagernet.fmt.internal.ConfigBean
 import io.nekohasekai.sagernet.fmt.http.HttpBean
 import io.nekohasekai.sagernet.fmt.http.toUri
+import io.nekohasekai.sagernet.fmt.internal.BalancerBean
+import io.nekohasekai.sagernet.fmt.internal.ChainBean
 import io.nekohasekai.sagernet.fmt.naive.NaiveBean
+import io.nekohasekai.sagernet.fmt.naive.buildNaiveConfig
 import io.nekohasekai.sagernet.fmt.naive.toUri
 import io.nekohasekai.sagernet.fmt.pingtunnel.PingTunnelBean
 import io.nekohasekai.sagernet.fmt.pingtunnel.toUri
 import io.nekohasekai.sagernet.fmt.relaybaton.RelayBatonBean
-import io.nekohasekai.sagernet.fmt.relaybaton.toUri
+import io.nekohasekai.sagernet.fmt.relaybaton.buildRelayBatonConfig
 import io.nekohasekai.sagernet.fmt.shadowsocks.ShadowsocksBean
+import io.nekohasekai.sagernet.fmt.shadowsocks.buildShadowsocksConfig
 import io.nekohasekai.sagernet.fmt.shadowsocks.methodsXray
 import io.nekohasekai.sagernet.fmt.shadowsocks.toUri
 import io.nekohasekai.sagernet.fmt.shadowsocksr.ShadowsocksRBean
+import io.nekohasekai.sagernet.fmt.shadowsocksr.buildShadowsocksRConfig
 import io.nekohasekai.sagernet.fmt.shadowsocksr.toUri
 import io.nekohasekai.sagernet.fmt.socks.SOCKSBean
 import io.nekohasekai.sagernet.fmt.socks.toUri
+import io.nekohasekai.sagernet.fmt.toUniversalLink
 import io.nekohasekai.sagernet.fmt.trojan.TrojanBean
 import io.nekohasekai.sagernet.fmt.trojan.toUri
 import io.nekohasekai.sagernet.fmt.trojan_go.TrojanGoBean
+import io.nekohasekai.sagernet.fmt.trojan_go.buildTrojanGoConfig
 import io.nekohasekai.sagernet.fmt.trojan_go.toUri
 import io.nekohasekai.sagernet.fmt.v2ray.StandardV2RayBean
 import io.nekohasekai.sagernet.fmt.v2ray.VLESSBean
@@ -72,6 +77,9 @@ data class ProxyEntity(
     var userOrder: Long = 0L,
     var tx: Long = 0L,
     var rx: Long = 0L,
+    var status: Int = 0,
+    var ping: Int = 0,
+    var error: String? = null,
     var socksBean: SOCKSBean? = null,
     var httpBean: HttpBean? = null,
     var ssBean: ShadowsocksBean? = null,
@@ -84,8 +92,9 @@ data class ProxyEntity(
     var ptBean: PingTunnelBean? = null,
     var rbBean: RelayBatonBean? = null,
     var brookBean: BrookBean? = null,
+    var configBean: ConfigBean? = null,
     var chainBean: ChainBean? = null,
-    var configBean: ConfigBean? = null
+    var balancerBean: BalancerBean? = null
 ) : Parcelable {
 
     companion object {
@@ -103,10 +112,12 @@ data class ProxyEntity(
         const val TYPE_BROOK = 12
 
         const val TYPE_CHAIN = 8
+        const val TYPE_BALANCER = 14
         const val TYPE_CONFIG = 13
 
         val chainName by lazy { app.getString(R.string.proxy_chain) }
         val configName by lazy { app.getString(R.string.custom_config) }
+        val balancerName by lazy { app.getString(R.string.balancer) }
 
         @JvmField
         val CREATOR = object : Parcelable.Creator<ProxyEntity> {
@@ -135,6 +146,10 @@ data class ProxyEntity(
         dirty = parcel.readByte() > 0
         val byteArray = ByteArray(parcel.readInt())
         parcel.readByteArray(byteArray)
+        putByteArray(byteArray)
+    }
+
+    fun putByteArray(byteArray: ByteArray) {
         when (type) {
             TYPE_SOCKS -> socksBean = KryoConverters.socksDeserialize(byteArray)
             TYPE_HTTP -> httpBean = KryoConverters.httpDeserialize(byteArray)
@@ -148,8 +163,9 @@ data class ProxyEntity(
             TYPE_PING_TUNNEL -> ptBean = KryoConverters.pingTunnelDeserialize(byteArray)
             TYPE_RELAY_BATON -> rbBean = KryoConverters.relayBatonDeserialize(byteArray)
             TYPE_BROOK -> brookBean = KryoConverters.brookDeserialize(byteArray)
-            TYPE_CHAIN -> chainBean = KryoConverters.chainDeserialize(byteArray)
             TYPE_CONFIG -> configBean = KryoConverters.configDeserialize(byteArray)
+            TYPE_CHAIN -> chainBean = KryoConverters.chainDeserialize(byteArray)
+            TYPE_BALANCER -> balancerBean = KryoConverters.balancerBeanDeserialize(byteArray)
         }
     }
 
@@ -166,31 +182,29 @@ data class ProxyEntity(
         parcel.writeByteArray(byteArray)
     }
 
-    fun displayType(): String {
-        return when (type) {
-            TYPE_SOCKS -> "SOCKS5"
-            TYPE_HTTP -> if (httpBean!!.tls) "HTTPS" else "HTTP"
-            TYPE_SS -> "Shadowsocks"
-            TYPE_SSR -> "ShadowsocksR"
-            TYPE_VMESS -> "VMess"
-            TYPE_VLESS -> "VLESS"
-            TYPE_TROJAN -> "Trojan"
-            TYPE_TROJAN_GO -> "Trojan-Go"
-            TYPE_NAIVE -> "Naïve"
-            TYPE_PING_TUNNEL -> "PingTunnel"
-            TYPE_RELAY_BATON -> "relaybaton"
-            TYPE_BROOK -> "Brook"
-            TYPE_CHAIN -> chainName
-            TYPE_CONFIG -> configName
-            else -> "Undefined type $type"
-        }
+    fun displayType() = when (type) {
+        TYPE_SOCKS -> "SOCKS5"
+        TYPE_HTTP -> if (httpBean!!.tls) "HTTPS" else "HTTP"
+        TYPE_SS -> "Shadowsocks"
+        TYPE_SSR -> "ShadowsocksR"
+        TYPE_VMESS -> "VMess"
+        TYPE_VLESS -> "VLESS"
+        TYPE_TROJAN -> "Trojan"
+        TYPE_TROJAN_GO -> "Trojan-Go"
+        TYPE_NAIVE -> "Naïve"
+        TYPE_PING_TUNNEL -> "PingTunnel"
+        TYPE_RELAY_BATON -> "relaybaton"
+        TYPE_BROOK -> "Brook"
+        TYPE_CHAIN -> chainName
+        TYPE_CONFIG -> configName
+        TYPE_BALANCER -> balancerName
+        else -> "Undefined type $type"
     }
 
-    fun displayName(): String {
-        return requireBean().displayName()
-    }
+    fun displayName() = requireBean().displayName()
+    fun displayAddress() = requireBean().displayAddress()
 
-    fun urlFixed(): String {
+    /*fun urlFixed(): String {
         val bean = requireBean()
         if (bean is ChainBean) {
             if (bean.proxies.isNotEmpty()) {
@@ -205,7 +219,7 @@ data class ProxyEntity(
         } else {
             "${bean.serverAddress}:${bean.serverPort}"
         }
-    }
+    }*/
 
     fun requireBean(): AbstractBean {
         return when (type) {
@@ -221,9 +235,10 @@ data class ProxyEntity(
             TYPE_PING_TUNNEL -> ptBean
             TYPE_RELAY_BATON -> rbBean
             TYPE_BROOK -> brookBean
+            TYPE_CONFIG -> configBean
 
             TYPE_CHAIN -> chainBean
-            TYPE_CONFIG -> configBean
+            TYPE_BALANCER -> balancerBean
             else -> error("Undefined type $type")
         } ?: error("Null ${displayType()} profile")
     }
@@ -232,6 +247,7 @@ data class ProxyEntity(
         return when (type) {
             TYPE_CHAIN -> false
             TYPE_CONFIG -> false
+            TYPE_BALANCER -> false
             else -> true
         }
     }
@@ -248,9 +264,67 @@ data class ProxyEntity(
             is TrojanGoBean -> toUri()
             is NaiveBean -> toUri()
             is PingTunnelBean -> toUri()
-            is RelayBatonBean -> toUri()
-            is BrookBean -> toUri()
+            is RelayBatonBean -> toUniversalLink()
+            is BrookBean -> toUniversalLink()
+            is ConfigBean -> toUniversalLink()
             else -> null
+        }
+    }
+
+    fun exportConfig(): Pair<String, String> {
+        var name = "profile.json"
+
+        return with(requireBean()) {
+            when (this) {
+                is ShadowsocksRBean -> buildShadowsocksRConfig()
+                is TrojanGoBean -> buildTrojanGoConfig(DataStore.socksPort, false, 0)
+                is NaiveBean -> buildNaiveConfig(DataStore.socksPort)
+                is RelayBatonBean -> {
+                    name = "profile.toml"
+                    buildRelayBatonConfig(DataStore.socksPort)
+                }
+                else -> StringBuilder().apply {
+                    val config = buildV2RayConfig(this@ProxyEntity)
+                    append(config.config)
+
+                    if (!config.index.all { it.second.isEmpty() }) {
+                        name = "profiles.txt"
+                    }
+
+                    for ((isBalancer, chain) in config.index) {
+                        chain.entries.forEachIndexed { index, (port, profile) ->
+                            val needChain = !isBalancer && index != chain.size - 1
+                            val bean = profile.requireBean()
+                            when {
+                                profile.useExternalShadowsocks() -> {
+                                    bean as ShadowsocksBean
+                                    append("\n\n")
+                                    append(bean.buildShadowsocksConfig(port))
+
+                                }
+                                bean is ShadowsocksRBean -> {
+                                    append("\n\n")
+                                    append(bean.buildShadowsocksRConfig())
+                                }
+                                bean is TrojanGoBean -> {
+                                    append("\n\n")
+                                    append(
+                                        bean.buildTrojanGoConfig(
+                                            port, needChain, index
+                                        )
+                                    )
+                                }
+                                bean is NaiveBean -> {
+                                    append(bean.buildNaiveConfig(port))
+                                }
+                                bean is RelayBatonBean -> {
+                                    append(bean.buildRelayBatonConfig(port))
+                                }
+                            }
+                        }
+                    }
+                }.toString()
+            } to name
         }
     }
 
@@ -265,11 +339,13 @@ data class ProxyEntity(
             TYPE_TROJAN -> false
             TYPE_TROJAN_GO -> true
             TYPE_NAIVE -> true
-            TYPE_CHAIN -> false
             TYPE_PING_TUNNEL -> true
             TYPE_RELAY_BATON -> true
             TYPE_BROOK -> true
             TYPE_CONFIG -> false
+
+            TYPE_CHAIN -> false
+            TYPE_BALANCER -> false
             else -> error("Undefined type $type")
         }
     }
@@ -302,7 +378,7 @@ data class ProxyEntity(
         return false
     }
 
-    fun putBean(bean: AbstractBean) {
+    fun putBean(bean: AbstractBean): ProxyEntity {
         socksBean = null
         httpBean = null
         ssBean = null
@@ -315,8 +391,11 @@ data class ProxyEntity(
         ptBean = null
         rbBean = null
         brookBean = null
-        chainBean = null
         configBean = null
+
+        chainBean = null
+        balancerBean = null
+
         when (bean) {
             is SOCKSBean -> {
                 type = TYPE_SOCKS
@@ -366,16 +445,21 @@ data class ProxyEntity(
                 type = TYPE_BROOK
                 brookBean = bean
             }
-            is ChainBean -> {
-                type = TYPE_CHAIN
-                chainBean = bean
-            }
             is ConfigBean -> {
                 type = TYPE_CONFIG
                 configBean = bean
             }
+            is ChainBean -> {
+                type = TYPE_CHAIN
+                chainBean = bean
+            }
+            is BalancerBean -> {
+                type = TYPE_BALANCER
+                balancerBean = bean
+            }
             else -> error("Undefined type $type")
         }
+        return this
     }
 
     fun settingIntent(ctx: Context, isSubscription: Boolean): Intent {
@@ -393,8 +477,10 @@ data class ProxyEntity(
                 TYPE_PING_TUNNEL -> PingTunnelSettingsActivity::class.java
                 TYPE_RELAY_BATON -> RelayBatonSettingsActivity::class.java
                 TYPE_BROOK -> BrookSettingsActivity::class.java
-                TYPE_CHAIN -> ChainSettingsActivity::class.java
                 TYPE_CONFIG -> ConfigSettingsActivity::class.java
+
+                TYPE_CHAIN -> ChainSettingsActivity::class.java
+                TYPE_BALANCER -> BalancerSettingsActivity::class.java
                 else -> throw IllegalArgumentException()
             }
         ).apply {
@@ -431,10 +517,16 @@ data class ProxyEntity(
         fun deleteByGroup(vararg groupId: Long)
 
         @Delete
-        fun deleteProxy(vararg proxy: ProxyEntity): Int
+        fun deleteProxy(proxy: ProxyEntity): Int
+
+        @Delete
+        fun deleteProxy(proxies: List<ProxyEntity>): Int
 
         @Update
-        fun updateProxy(vararg proxy: ProxyEntity): Int
+        fun updateProxy(proxy: ProxyEntity): Int
+
+        @Update
+        fun updateProxy(proxies: List<ProxyEntity>): Int
 
         @Insert
         fun addProxy(proxy: ProxyEntity): Long

@@ -45,13 +45,21 @@ fun PreferenceDataStore.stringToInt(
     defaultValue: () -> Int = { 0 },
 ) = PreferenceProxy(name,
     defaultValue,
-    { key, default -> getString(key, "$default")?.takeIf { NumberUtil.isInteger(it) }?.toInt() },
+    { key, default -> getString(key, "$default")?.takeIf { NumberUtil.isInteger(it) }?.toInt() ?: default },
     { key, value -> putString(key, "$value") })
 
 fun PreferenceDataStore.long(
     name: String,
     defaultValue: () -> Long = { 0L },
 ) = PreferenceProxy(name, defaultValue, ::getLong, ::putLong)
+
+fun PreferenceDataStore.stringToLong(
+    name: String,
+    defaultValue: () -> Long = { 0L },
+) = PreferenceProxy(name,
+    defaultValue,
+    { key, default -> getString(key, "$default")?.takeIf { NumberUtil.isLong(it) }?.toLong() ?: default },
+    { key, value -> putString(key, "$value") })
 
 class PreferenceProxy<T>(
     val name: String,

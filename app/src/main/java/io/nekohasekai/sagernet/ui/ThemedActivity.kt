@@ -23,6 +23,7 @@ package io.nekohasekai.sagernet.ui
 
 import android.content.res.Configuration
 import android.os.Bundle
+import android.widget.TextView
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -67,6 +68,11 @@ abstract class ThemedActivity : AppCompatActivity {
     }
 
     fun snackbar(@StringRes resId: Int): Snackbar = snackbar("").setText(resId)
-    open fun snackbar(text: CharSequence): Snackbar = TODO()
+    fun snackbar(text: CharSequence): Snackbar = snackbarInternal(text).apply {
+        view.findViewById<TextView>(com.google.android.material.R.id.snackbar_text).apply {
+            maxLines = 10
+        }
+    }
+    internal open fun snackbarInternal(text: CharSequence): Snackbar = TODO()
 
 }

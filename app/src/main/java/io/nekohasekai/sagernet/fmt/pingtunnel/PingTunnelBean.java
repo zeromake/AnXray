@@ -26,12 +26,27 @@ import com.esotericsoftware.kryo.io.ByteBufferOutput;
 
 import org.jetbrains.annotations.NotNull;
 
+import cn.hutool.core.util.StrUtil;
 import io.nekohasekai.sagernet.fmt.AbstractBean;
 import io.nekohasekai.sagernet.fmt.KryoConverters;
 
 public class PingTunnelBean extends AbstractBean {
 
     public String key;
+
+    @Override
+    public String displayName() {
+        if (StrUtil.isNotBlank(name)) {
+            return name;
+        } else {
+            return serverAddress;
+        }
+    }
+
+    @Override
+    public boolean canTCPing() {
+        return false;
+    }
 
     @Override
     public void initDefaultValues() {
@@ -51,7 +66,6 @@ public class PingTunnelBean extends AbstractBean {
         int version = input.readInt();
         serverAddress = input.readString();
         key = input.readString();
-        initDefaultValues();
     }
 
     @NotNull

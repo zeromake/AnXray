@@ -30,7 +30,15 @@ import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import cn.hutool.core.util.NumberUtil
+import com.v2ray.core.app.observatory.command.GetOutboundStatusRequest
+import com.v2ray.core.app.observatory.command.ObservatoryServiceGrpcKt
+import com.v2ray.core.app.stats.command.GetStatsRequest
+import com.v2ray.core.app.stats.command.StatsServiceGrpcKt
+import io.grpc.ManagedChannel
+import io.grpc.StatusException
 import io.nekohasekai.sagernet.IPv6Mode
+import io.nekohasekai.sagernet.R
 import io.nekohasekai.sagernet.SagerNet
 import io.nekohasekai.sagernet.database.DataStore
 import io.nekohasekai.sagernet.database.ProxyEntity
@@ -55,8 +63,7 @@ import io.nekohasekai.sagernet.fmt.trojan_go.buildTrojanGoConfig
 import io.nekohasekai.sagernet.ktx.*
 import io.nekohasekai.sagernet.plugin.PluginManager.InitResult
 import io.nekohasekai.sagernet.utils.DirectBoot
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import libv2ray.Libv2ray
 import libv2ray.V2RayPoint
 import libv2ray.V2RayVPNServiceSupportsSet
@@ -65,19 +72,28 @@ import java.io.IOException
 import java.util.*
 import io.nekohasekai.sagernet.plugin.PluginManager as PluginManagerS
 
-class ProxyInstance(val profile: ProxyEntity) {
+class ProxyInstance(val profile: ProxyEntity, val service: BaseService.Interface) {
 
     lateinit var v2rayPoint: V2RayPoint
     lateinit var config: V2rayBuildResult
     lateinit var base: BaseService.Interface
     lateinit var wsForwarder: WebView
 
+    lateinit var managedChannel: ManagedChannel
+    val statsService by lazy { StatsServiceGrpcKt.StatsServiceCoroutineStub(managedChannel) }
+    val observatoryService by lazy {
+        ObservatoryServiceGrpcKt.ObservatoryServiceCoroutineStub(
+            managedChannel
+        )
+    }
+    lateinit var observatoryJob: Job
+
     val pluginPath = hashMapOf<String, InitResult>()
     fun initPlugin(name: String): InitResult {
         return pluginPath.getOrPut(name) { PluginManagerS.init(name)!! }
     }
 
-    val pluginConfigs = hashMapOf<Int, String>()
+    val pluginConfigs = hashMapOf<Int, Pair<Int, String>>()
 
     fun init(service: BaseService.Interface) {
         base = service
@@ -87,41 +103,37 @@ class ProxyInstance(val profile: ProxyEntity) {
             ), false
         )
         val socksPort = DataStore.socksPort + 10
-        if (profile.needExternal()) {
-            v2rayPoint.domainName = "127.0.0.1:$socksPort"
-        } else {
-            v2rayPoint.domainName = profile.urlFixed()
-        }
+        v2rayPoint.domainName = "127.0.0.1:$socksPort"
 
         if (profile.type != ProxyEntity.TYPE_CONFIG) {
             config = buildV2RayConfig(profile)
 
-            for (chain in config.index) {
+            for ((isBalancer, chain) in config.index) {
                 chain.entries.forEachIndexed { index, (port, profile) ->
-                    val needChain = index != chain.size - 1
+                    val needChain = !isBalancer && index != chain.size - 1
                     val bean = profile.requireBean()
                     when {
                         profile.useExternalShadowsocks() -> {
                             bean as ShadowsocksBean
-                            pluginConfigs[port] = bean.buildShadowsocksConfig(port).also {
-                                Logs.d(it)
-                            }
+                            pluginConfigs[port] = profile.type to bean.buildShadowsocksConfig(port)
                         }
                         bean is ShadowsocksRBean -> {
-                            pluginConfigs[port] = bean.buildShadowsocksRConfig().also {
-                                Logs.d(it)
-                            }
+                            pluginConfigs[port] =
+                                profile.type to bean.buildShadowsocksRConfig().also {
+                                    Logs.d(it)
+                                }
                         }
                         bean is TrojanGoBean -> {
                             initPlugin("trojan-go-plugin")
                             pluginConfigs[port] =
-                                bean.buildTrojanGoConfig(port, needChain, index).also {
-                                    Logs.d(it)
-                                }
+                                profile.type to bean.buildTrojanGoConfig(port, needChain, index)
+                                    .also {
+                                        Logs.d(it)
+                                    }
                         }
                         bean is NaiveBean -> {
                             initPlugin("naive-plugin")
-                            pluginConfigs[port] = bean.buildNaiveConfig(port).also {
+                            pluginConfigs[port] = profile.type to bean.buildNaiveConfig(port).also {
                                 Logs.d(it)
                             }
                         }
@@ -130,9 +142,10 @@ class ProxyInstance(val profile: ProxyEntity) {
                         }
                         bean is RelayBatonBean -> {
                             initPlugin("relaybaton-plugin")
-                            pluginConfigs[port] = bean.buildRelayBatonConfig(port).also {
-                                Logs.d(it)
-                            }
+                            pluginConfigs[port] =
+                                profile.type to bean.buildRelayBatonConfig(port).also {
+                                    Logs.d(it)
+                                }
                         }
                         bean is BrookBean -> {
                             initPlugin("brook-plugin")
@@ -152,8 +165,9 @@ class ProxyInstance(val profile: ProxyEntity) {
                             trojanGoBean = TrojanGoBean().applyDefaultValues()
                         )
                     )
-                    val (port, _) = config.index[0].entries.first()
-                    pluginConfigs[port] = buildCustomTrojanConfig(bean.content, port)
+                    val (port, _) = config.index[0].second.entries.first()
+                    pluginConfigs[port] =
+                        profile.type to buildCustomTrojanConfig(bean.content, port)
                 } //"v2ray" -> {
                 else -> {
                     config = buildCustomConfig(profile)
@@ -162,7 +176,6 @@ class ProxyInstance(val profile: ProxyEntity) {
         }
 
         Logs.d(config.config)
-        Libv2ray.testConfig(config.config)
         v2rayPoint.configureFileContent = config.config
     }
 
@@ -174,11 +187,11 @@ class ProxyInstance(val profile: ProxyEntity) {
         val context =
             if (Build.VERSION.SDK_INT < 24 || SagerNet.user.isUserUnlocked) SagerNet.application else SagerNet.deviceStorage
 
-        for (chain in config.index) {
+        for ((isBalancer, chain) in config.index) {
             chain.entries.forEachIndexed { index, (port, profile) ->
                 val bean = profile.requireBean()
-                val needChain = index != chain.size - 1
-                val config = pluginConfigs[port] ?: ""
+                val needChain = !isBalancer && index != chain.size - 1
+                val config = pluginConfigs[port]?.second ?: ""
 
                 when {
                     profile.useExternalShadowsocks() -> {
@@ -295,6 +308,8 @@ class ProxyInstance(val profile: ProxyEntity) {
                         if (needChain) error("PingTunnel is incompatible with chain")
 
                         val commands = mutableListOf(
+                            "su",
+                            "-c",
                             initPlugin("pingtunnel-plugin").path,
                             "-type",
                             "client",
@@ -370,124 +385,320 @@ class ProxyInstance(val profile: ProxyEntity) {
             }
         }
 
-        if (config.requireWs) {
-            Os.setenv("XRAY_BROWSER_DIALER", "127.0.0.1:" + (DataStore.socksPort + 1), true)
-        } else {
-            Os.unsetenv("XRAY_BROWSER_DIALER")
-        }
+        runOnDefaultDispatcher {
 
-        v2rayPoint.runLoop(DataStore.ipv6Mode >= IPv6Mode.PREFER)
+            if (config.requireWs) {
+                Os.setenv("XRAY_BROWSER_DIALER", "127.0.0.1:" + (DataStore.socksPort + 1), true)
+            } else {
+                Os.unsetenv("XRAY_BROWSER_DIALER")
+            }
 
-        if (config.requireWs) {
-            runOnDefaultDispatcher {
-                val url = "http://127.0.0.1:" + (DataStore.socksPort + 1) + "/"
-                onMainDispatcher {
-                    wsForwarder = WebView(base as Context)
-                    wsForwarder.settings.javaScriptEnabled = true
-                    wsForwarder.webViewClient = object : WebViewClient() {
-                        override fun onReceivedError(
-                            view: WebView?,
-                            request: WebResourceRequest?,
-                            error: WebResourceError?,
-                        ) {
-                            Logs.d("WebView load failed: $error")
+            try {
+                val start = SystemClock.elapsedRealtime()
+                v2rayPoint.runLoop(DataStore.ipv6Mode >= IPv6Mode.PREFER)
+                Logs.d("Start v2ray core took ${(SystemClock.elapsedRealtime() - start) / 1000.0}s")
+            } catch (e: Throwable) {
+                service.stopRunner(
+                    false, "${app.getString(R.string.service_failed)}: ${e.readableMessage}"
+                )
+                return@runOnDefaultDispatcher
+            }
 
-                            runOnMainDispatcher {
-                                wsForwarder.loadUrl("about:blank")
+            managedChannel = createChannel()
 
-                                delay(1000L)
-                                wsForwarder.loadUrl(url)
+            if (config.observatoryTags.isNotEmpty()) {
+                observatoryJob = launch(Dispatchers.IO) {
+                    val interval = 10000L
+                    while (isActive) {
+                        try {
+                            val statusList =
+                                observatoryService.getOutboundStatus(GetOutboundStatusRequest.getDefaultInstance()).status.statusList
+                            if (!isActive) break
+                            statusList.forEach { status ->
+                                val profileId = status.outboundTag.substringAfter("global-")
+                                if (NumberUtil.isLong(profileId)) {
+                                    val profile = SagerDatabase.proxyDao.getById(profileId.toLong())
+                                    if (profile != null) {
+                                        val newStatus = if (status.alive) 1 else 3
+                                        val newDelay = status.delay.toInt()
+                                        val newErrorReason = status.lastErrorReason
+
+                                        if (profile.status != newStatus || profile.ping != newDelay || profile.error != newErrorReason) {
+                                            profile.status = newStatus
+                                            profile.ping = newDelay
+                                            profile.error = newErrorReason
+                                            SagerDatabase.proxyDao.updateProxy(profile)
+                                            onMainDispatcher {
+                                                service.data.binder.broadcast {
+                                                    it.profilePersisted(profile.id)
+                                                }
+                                            }
+                                            Logs.d("Send result for #$profileId ${profile.displayName()}")
+                                        }
+                                    } else {
+                                        Logs.d("Profile with id #$profileId not found")
+                                    }
+                                } else {
+                                    Logs.d("Persist skipped on outbound ${status.outboundTag}")
+                                }
                             }
+                        } catch (e: StatusException) {
+                            Logs.w(e)
                         }
-
-                        override fun onPageFinished(view: WebView, url: String) {
-                            super.onPageFinished(view, url)
-
-                            Logs.d("WebView loaded: ${view.title}")
-
-                        }
+                        delay(interval)
                     }
-                    wsForwarder.loadUrl(url)
                 }
             }
-        }
 
-        DataStore.startedProxy = profile.id
+            if (config.requireWs) {
+                runOnDefaultDispatcher {
+                    val url = "http://127.0.0.1:" + (DataStore.socksPort + 1) + "/"
+                    onMainDispatcher {
+                        wsForwarder = WebView(base as Context)
+                        wsForwarder.settings.javaScriptEnabled = true
+                        wsForwarder.webViewClient = object : WebViewClient() {
+                            override fun onReceivedError(
+                                view: WebView?,
+                                request: WebResourceRequest?,
+                                error: WebResourceError?,
+                            ) {
+                                Logs.d("WebView load failed: $error")
+
+                                runOnMainDispatcher {
+                                    wsForwarder.loadUrl("about:blank")
+
+                                    delay(1000L)
+                                    wsForwarder.loadUrl(url)
+                                }
+                            }
+
+                            override fun onPageFinished(view: WebView, url: String) {
+                                super.onPageFinished(view, url)
+
+                                Logs.d("WebView loaded: ${view.title}")
+
+                            }
+                        }
+                        wsForwarder.loadUrl(url)
+                    }
+                }
+            }
+
+        }
     }
 
     fun stop() {
-        v2rayPoint.stopLoop()
+        runOnDefaultDispatcher {
+            DataStore.startedProxy = 0L
+
+            v2rayPoint.stopLoop()
+        }
+    }
+
+    fun shutdown() {
+        persistStats()
+        cacheFiles.removeAll { it.delete(); true }
+
+        if (::observatoryJob.isInitialized) {
+            observatoryJob.cancel()
+        }
+
+        if (::managedChannel.isInitialized) {
+            managedChannel.shutdownNow()
+        }
 
         if (::wsForwarder.isInitialized) {
             wsForwarder.loadUrl("about:blank")
             wsForwarder.destroy()
         }
-
-        DataStore.startedProxy = 0L
     }
 
-    fun stats(direct: String): Long {
-        if (!::config.isInitialized) {
+    // ------------- stats -------------
+
+    private suspend fun queryStats(tag: String, direct: String): Long {
+        try {
+            return queryStatsGrpc(tag, direct)
+        } catch (e: StatusException) {
+            if (e.status.description?.contains("shutdown") == true) {
+                return 0L
+            }
+            Logs.w(e)
+            if (isExpert) return 0L
+        }
+        return v2rayPoint.queryStats(tag, direct)
+    }
+
+    private suspend fun queryStatsGrpc(tag: String, direct: String): Long {
+        if (!::managedChannel.isInitialized) {
             return 0L
         }
-        return config.outboundTags.map { v2rayPoint.queryStats(it, direct) }
-            .fold(0L) { acc, l -> acc + l }
+        try {
+            return statsService.getStats(
+                GetStatsRequest.newBuilder().setName("outbound>>>$tag>>>traffic>>>$direct")
+                    .setReset(true).build()
+            ).stat.value
+        } catch (e: StatusException) {
+            if (e.status.description?.contains("not found") == true) {
+                return 0L
+            }
+            throw e
+        }
     }
 
-    fun statsDirect(direct: String): Long {
-        if (!::config.isInitialized) {
-            return 0L
+    private val currentTags by lazy {
+        config.outboundTagsAll.filterKeys {
+            config.outboundTagsCurrent.contains(
+                it
+            )
         }
-        return v2rayPoint.queryStats(config.directTag, direct)
     }
 
-    val uplinkProxy
-        get() = stats("uplink").also {
-            uplinkTotalProxy += it
+    private val statsTagList by lazy {
+        config.outboundTags.toMutableList().apply {
+            removeAll(config.outboundTagsCurrent)
         }
+    }
 
-    val downlinkProxy
-        get() = stats("downlink").also {
-            downlinkTotalProxy += it
+    private val statsTags by lazy {
+        config.outboundTagsAll.filterKeys {
+            statsTagList.contains(
+                it
+            )
         }
+    }
 
-    val uplinkDirect
-        get() = statsDirect("uplink").also {
-            uplinkTotalDirect += it
+    private val interTags by lazy {
+        config.outboundTagsAll.filterKeys { !config.outboundTags.contains(it) }
+    }
+
+    class OutboundStats(
+        val proxyEntity: ProxyEntity, var uplinkTotal: Long = 0L, var downlinkTotal: Long = 0L
+    )
+
+    private val statsOutbounds = hashMapOf<Long, OutboundStats>()
+    private fun registerStats(
+        proxyEntity: ProxyEntity, uplink: Long? = null, downlink: Long? = null
+    ) {
+        if (proxyEntity.id == outboundStats.proxyEntity.id) return
+        val stats = statsOutbounds.getOrPut(proxyEntity.id) {
+            OutboundStats(proxyEntity)
         }
-
-    val downlinkDirect
-        get() = statsDirect("downlink").also {
-            downlinkTotalDirect += it
+        if (uplink != null) {
+            stats.uplinkTotal += uplink
         }
+        if (downlink != null) {
+            stats.downlinkTotal += downlink
+        }
+    }
 
-
-    var uplinkTotalProxy = 0L
-    var downlinkTotalProxy = 0L
+    var uplinkProxy = 0L
+    var downlinkProxy = 0L
     var uplinkTotalDirect = 0L
     var downlinkTotalDirect = 0L
 
-    fun persistStats() {
-        try {
-            uplinkProxy
-            downlinkProxy
-            profile.tx += uplinkTotalProxy
-            profile.rx += downlinkTotalProxy
-            SagerDatabase.proxyDao.updateProxy(profile)
-        } catch (e: IOException) {
-            if (!DataStore.directBootAware) throw e // we should only reach here because we're in direct boot
-            val profile = DirectBoot.getDeviceProfile()!!
-            profile.tx += uplinkTotalProxy
-            profile.rx += downlinkTotalProxy
-            profile.dirty = true
-            DirectBoot.update(profile)
-            DirectBoot.listenForUnlock()
+    private val outboundStats = OutboundStats(profile)
+    suspend fun outboundStats(): Pair<OutboundStats, HashMap<Long, OutboundStats>> {
+        if (!::config.isInitialized) {
+            return outboundStats to statsOutbounds
         }
+        uplinkProxy = 0L
+        downlinkProxy = 0L
+
+        val currentUpLink = currentTags.map { (tag, profile) ->
+            queryStats(
+                tag, "uplink"
+            ).also { registerStats(profile, uplink = it) }
+        }
+        val currentDownLink = currentTags.map { (tag, profile) ->
+            queryStats(tag, "downlink").also {
+                registerStats(profile, downlink = it)
+            }
+        }
+        uplinkProxy += currentUpLink.fold(0L) { acc, l -> acc + l }
+        downlinkProxy += currentDownLink.fold(0L) { acc, l -> acc + l }
+
+        outboundStats.uplinkTotal += uplinkProxy
+        outboundStats.downlinkTotal += downlinkProxy
+
+        if (statsTags.isNotEmpty()) {
+            uplinkProxy += statsTags.map { (tag, profile) ->
+                queryStats(
+                    tag, "uplink"
+                ).also { registerStats(profile, uplink = it) }
+            }.fold(0L) { acc, l -> acc + l }
+            downlinkProxy += statsTags.map { (tag, profile) ->
+                queryStats(tag, "downlink").also {
+                    registerStats(profile, downlink = it)
+                }
+            }.fold(0L) { acc, l -> acc + l }
+        }
+
+        if (interTags.isNotEmpty()) {
+            interTags.map { (tag, profile) ->
+                queryStats(
+                    tag, "uplink"
+                ).also { registerStats(profile, uplink = it) }
+            }
+            interTags.map { (tag, profile) ->
+                queryStats(tag, "downlink").also {
+                    registerStats(
+                        profile, downlink = it
+                    )
+                }
+            }
+        }
+
+        return outboundStats to statsOutbounds
     }
 
-    fun shutdown(coroutineScope: CoroutineScope) {
-        persistStats()
-        cacheFiles.removeAll { it.delete(); true }
+    suspend fun directStats(direct: String): Long {
+        if (!::config.isInitialized) {
+            return 0L
+        }
+        return queryStats(config.directTag, direct)
+    }
+
+    suspend fun uplinkDirect() = directStats("uplink").also {
+        uplinkTotalDirect += it
+    }
+
+    suspend fun downlinkDirect() = directStats("downlink").also {
+        downlinkTotalDirect += it
+    }
+
+    fun persistStats() {
+        runBlocking {
+            try {
+                outboundStats()
+
+                val toUpdate = mutableListOf<ProxyEntity>()
+                if (outboundStats.uplinkTotal + outboundStats.downlinkTotal != 0L) {
+                    profile.tx += outboundStats.uplinkTotal
+                    profile.rx += outboundStats.downlinkTotal
+                    toUpdate.add(profile)
+                }
+
+                statsOutbounds.values.forEach {
+                    if (it.uplinkTotal + it.downlinkTotal != 0L) {
+                        it.proxyEntity.tx += it.uplinkTotal
+                        it.proxyEntity.rx += it.downlinkTotal
+                        toUpdate.add(it.proxyEntity)
+                    }
+                }
+
+                if (toUpdate.isNotEmpty()) {
+                    SagerDatabase.proxyDao.updateProxy(toUpdate)
+                }
+            } catch (e: IOException) {
+                if (!DataStore.directBootAware) throw e // we should only reach here because we're in direct boot
+                val profile = DirectBoot.getDeviceProfile()!!
+                profile.tx += outboundStats.uplinkTotal
+                profile.rx += outboundStats.downlinkTotal
+                profile.dirty = true
+                DirectBoot.update(profile)
+                DirectBoot.listenForUnlock()
+            }
+        }
     }
 
     private class SagerSupportClass(val service: VpnService?) : V2RayVPNServiceSupportsSet {

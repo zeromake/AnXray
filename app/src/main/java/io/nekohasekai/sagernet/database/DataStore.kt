@@ -53,17 +53,16 @@ object DataStore : OnPreferenceDataStoreChangeListener {
         SagerNet.currentProfile?.groupId ?: 0L
     }
 
-    suspend fun selectedGroupForImport(): Long {
+    fun selectedGroupForImport(): Long {
         val groups = SagerDatabase.groupDao.allGroups()
         val selectedGroup = SagerDatabase.groupDao.getById(selectedGroup) ?: groups[0]
         var targetIndex by Delegates.notNull<Int>()
-        val targetId = if (!selectedGroup.isSubscription) {
+        return if (!selectedGroup.isSubscription) {
             selectedGroup.id
         } else {
             targetIndex = groups.indexOfFirst { !it.isSubscription }
             groups[targetIndex].id
         }
-        return targetId
     }
 
     var appTheme by configurationStore.int(Key.APP_THEME) { 0 }
@@ -75,7 +74,7 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var trafficSniffing by configurationStore.boolean(Key.TRAFFIC_SNIFFING) { true }
     var tcpKeepAliveInterval by configurationStore.stringToInt(Key.TCP_KEEP_ALIVE_INTERVAL) { 15 }
 
-    var bypassLan by configurationStore.boolean(Key.BYPASS_LAN) { true }
+    var bypassLan by configurationStore.boolean(Key.BYPASS_LAN) { false }
 
     var allowAccess by configurationStore.boolean(Key.ALLOW_ACCESS)
     var speedInterval by configurationStore.stringToInt(Key.SPEED_INTERVAL)
@@ -107,6 +106,13 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var transproxyPort: Int
         get() = getLocalPort(Key.TRANSPROXY_PORT, 9200)
         set(value) = saveLocalPort(Key.TRANSPROXY_PORT, value)
+    var apiPort: Int
+        get() = getLocalPort(Key.API_PORT, 9002)
+        set(value) {
+            saveLocalPort(Key.API_PORT, value)
+        }
+
+    var probeInterval by configurationStore.stringToInt(Key.PROBE_INTERVAL) { 300 }
 
     fun initGlobal() {
         if (configurationStore.getString(Key.SOCKS_PORT) == null) {
@@ -121,7 +127,9 @@ object DataStore : OnPreferenceDataStoreChangeListener {
         if (configurationStore.getString(Key.TRANSPROXY_PORT) == null) {
             transproxyPort = transproxyPort
         }
-
+        if (configurationStore.getString(Key.API_PORT) == null) {
+            apiPort = apiPort
+        }
     }
 
 
@@ -137,7 +145,7 @@ object DataStore : OnPreferenceDataStoreChangeListener {
 
     var meteredNetwork by configurationStore.boolean(Key.METERED_NETWORK)
     var proxyApps by configurationStore.boolean(Key.PROXY_APPS)
-    var bypass by configurationStore.boolean(Key.BYPASS_MODE)
+    var bypass by configurationStore.boolean(Key.BYPASS_MODE) { true }
     var individual by configurationStore.string(Key.INDIVIDUAL)
     var forceShadowsocksRust by configurationStore.boolean(Key.FORCE_SHADOWSOCKS_RUST)
 
@@ -156,6 +164,7 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var requireTransproxy by configurationStore.boolean(Key.REQUIRE_TRANSPROXY)
     var transproxyMode by configurationStore.stringToInt(Key.TRANSPROXY_MODE)
     var connectionTestURL by configurationStore.string(Key.CONNECTION_TEST_URL) { CONNECTION_TEST_URL }
+    var alwaysShowAddress by configurationStore.boolean(Key.ALWAYS_SHOW_ADDRESS)
 
     // cache
 
@@ -194,6 +203,10 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var serverHeaders by profileCacheStore.string(Key.SERVER_HEADERS)
     var serverAllowInsecure by profileCacheStore.boolean(Key.SERVER_ALLOW_INSECURE)
     var serverMultiMode by profileCacheStore.boolean(Key.SERVER_MULTI_MODE)
+
+    var balancerType by profileCacheStore.stringToInt(Key.BALANCER_TYPE)
+    var balancerGroup by profileCacheStore.stringToLong(Key.BALANCER_GROUP)
+    var balancerStrategy by profileCacheStore.string(Key.BALANCER_STRATEGY)
 
     var routeName by profileCacheStore.string(Key.ROUTE_NAME)
     var routeDomain by profileCacheStore.string(Key.ROUTE_DOMAIN)

@@ -68,6 +68,6 @@ fun RelayBatonBean.buildRelayBatonConfig(port: Int): String {
        
         [log]
         file = "stdout"
-        level = "${if (DataStore.enableLog) "trace" else "warn"}"
+        level = "${if (DataStore.enableLog) "trace" else "error"}"
     """.trimIndent()
 }

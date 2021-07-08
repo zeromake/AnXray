@@ -23,10 +23,11 @@ package io.nekohasekai.sagernet.ui
 
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
-import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.os.SystemClock
 import android.text.format.Formatter
 import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
@@ -56,20 +57,30 @@ import io.nekohasekai.sagernet.SagerNet
 import io.nekohasekai.sagernet.aidl.TrafficStats
 import io.nekohasekai.sagernet.bg.BaseService
 import io.nekohasekai.sagernet.database.*
+import io.nekohasekai.sagernet.databinding.LayoutProfileBinding
 import io.nekohasekai.sagernet.databinding.LayoutProfileListBinding
+import io.nekohasekai.sagernet.databinding.LayoutProgressBinding
 import io.nekohasekai.sagernet.fmt.AbstractBean
 import io.nekohasekai.sagernet.fmt.socks.SOCKSBean
+import io.nekohasekai.sagernet.fmt.toUniversalLink
+import io.nekohasekai.sagernet.fmt.v2ray.toV2rayN
 import io.nekohasekai.sagernet.ktx.*
 import io.nekohasekai.sagernet.ui.profile.*
 import io.nekohasekai.sagernet.widget.QRCodeDialog
 import io.nekohasekai.sagernet.widget.UndoSnackbarManager
+import kotlinx.coroutines.*
 import okhttp3.*
+import java.io.IOException
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.Socket
+import java.net.UnknownHostException
 import java.util.*
+import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
 import kotlin.properties.Delegates
-
 
 class ConfigurationFragment @JvmOverloads constructor(
     val select: Boolean = false,
@@ -81,6 +92,8 @@ class ConfigurationFragment @JvmOverloads constructor(
     lateinit var tabLayout: TabLayout
     lateinit var groupPager: ViewPager2
     val selectedGroup get() = adapter.groupList[tabLayout.selectedTabPosition]
+    val alwaysShowAddress by lazy { DataStore.alwaysShowAddress }
+    val securityAdvisory by lazy { DataStore.securityAdvisory }
 
     @SuppressLint("RestrictedApi")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -138,13 +151,10 @@ class ConfigurationFragment @JvmOverloads constructor(
         TabLayoutMediator(tabLayout, groupPager) { tab, position ->
             if (adapter.groupList.size > position) {
                 tab.text = adapter.groupList[position].displayName()
-            }/* tab.view.setOnLongClickListener { tabView ->
-                 val popup = PopupMenu(requireContext(), tabView)
-                 popup.menuInflater.inflate(R.menu.tab_edit_menu, popup.menu)
-                 popup.setOnMenuItemClickListener(this)
-                 popup.show()
-                 true
-             }*/
+            }
+            tab.view.setOnLongClickListener { // clear toast
+                true
+            }
         }.attach()
 
         toolbar.setOnClickListener {
@@ -292,11 +302,14 @@ class ConfigurationFragment @JvmOverloads constructor(
             R.id.action_new_brook -> {
                 startActivity(Intent(requireActivity(), BrookSettingsActivity::class.java))
             }
+            R.id.action_new_config -> {
+                startActivity(Intent(requireActivity(), ConfigSettingsActivity::class.java))
+            }
             R.id.action_new_chain -> {
                 startActivity(Intent(requireActivity(), ChainSettingsActivity::class.java))
             }
-            R.id.action_new_config -> {
-                startActivity(Intent(requireActivity(), ConfigSettingsActivity::class.java))
+            R.id.action_new_balancer -> {
+                startActivity(Intent(requireActivity(), BalancerSettingsActivity::class.java))
             }
             R.id.action_export_clipboard -> {
                 runOnDefaultDispatcher {
@@ -309,55 +322,292 @@ class ConfigurationFragment @JvmOverloads constructor(
                 }
             }
             R.id.action_export_file -> {
-                startFilesForResult(exportProfiles)
-            }
-            R.id.action_clear -> {
+                startFilesForResult(exportProfiles, "profiles.txt")
+            }/* R.id.test -> {
                 runOnDefaultDispatcher {
-                    ProfileManager.clearGroup(DataStore.selectedGroup)
+                    try {
+                        val managedChannel = createChannel()
+                        val observatoryService =
+                            ObservatoryServiceGrpcKt.ObservatoryServiceCoroutineStub(managedChannel)
+                        val status =
+                            observatoryService.getOutboundStatus(GetOutboundStatusRequest.getDefaultInstance()).status
+                        val message =
+                            "${status.statusCount}\n" + status.statusList.joinToString("\n") { it.outboundTag + ": " + it.alive + ", " + it.delay + ", " + it.lastErrorReason }
+                        onMainDispatcher {
+                            MaterialAlertDialogBuilder(requireContext()).setMessage(message)
+                                .setPositiveButton(android.R.string.ok, null).show()
+                        }
+                        managedChannel.shutdownNow()
+                    } catch (e: StatusException) {
+                        onMainDispatcher {
+                            MaterialAlertDialogBuilder(requireContext()).setMessage(e.readableMessage)
+                                .setPositiveButton(android.R.string.ok, null).show()
+                        }
+                    }
                 }
+            }*/
+            R.id.action_clear_traffic_statistics -> {
+                runOnDefaultDispatcher {
+                    val profiles = SagerDatabase.proxyDao.getByGroup(DataStore.selectedGroup)
+                    val toClear = mutableListOf<ProxyEntity>()
+                    if (profiles.isNotEmpty()) for (profile in profiles) {
+                        if (profile.tx != 0L || profile.rx != 0L) {
+                            profile.tx = 0
+                            profile.rx = 0
+                            toClear.add(profile)
+                        }
+                    }
+                    if (toClear.isNotEmpty()) {
+                        ProfileManager.updateProfile(toClear)
+                    }
+                }
+            }
+            R.id.action_connection_test_clear_results -> {
+                runOnDefaultDispatcher {
+                    val profiles = SagerDatabase.proxyDao.getByGroup(DataStore.selectedGroup)
+                    val toClear = mutableListOf<ProxyEntity>()
+                    if (profiles.isNotEmpty()) for (profile in profiles) {
+                        if (profile.status != 0) {
+                            profile.status = 0
+                            profile.ping = 0
+                            profile.error = null
+                            toClear.add(profile)
+                        }
+                    }
+                    if (toClear.isNotEmpty()) {
+                        ProfileManager.updateProfile(toClear)
+                    }
+                }
+            }
+            R.id.action_connection_tcp_ping -> {
+                tcpPingTest()
             }
         }
         return true
     }
 
-    private fun startFilesForResult(launcher: ActivityResultLauncher<String>) {
-        try {
-            return launcher.launch("")
-        } catch (_: ActivityNotFoundException) {
-        } catch (_: SecurityException) {
+    inner class TestDialog {
+        val binding = LayoutProgressBinding.inflate(layoutInflater)
+        val builder = MaterialAlertDialogBuilder(requireContext()).setView(binding.root)
+            .setNegativeButton(android.R.string.cancel, DialogInterface.OnClickListener { _, _ ->
+                cancel()
+            }).setCancelable(false)
+        lateinit var cancel: () -> Unit
+        val results = ArrayList<ProxyEntity>()
+        val adapter = TestAdapter()
+
+        suspend fun insert(profile: ProxyEntity) {
+            binding.listView.post {
+                results.add(profile)
+                adapter.notifyItemInserted(results.size - 1)
+                binding.listView.scrollToPosition(results.size - 1)
+            }
         }
-        (activity as MainActivity).snackbar(getString(R.string.file_manager_missing)).show()
-    }
 
-    class SaveProfiles : ActivityResultContracts.CreateDocument() {
-        override fun createIntent(context: Context, input: String) =
-            super.createIntent(context, "profiles.txt").apply { type = "text/plain" }
-    }
+        suspend fun update(profile: ProxyEntity) {
+            binding.listView.post {
+                val index = results.indexOf(profile)
+                adapter.notifyItemChanged(index)
+            }
+        }
 
+        init {
+            binding.listView.layoutManager = FixedLinearLayoutManager(binding.listView)
+            binding.listView.itemAnimator = DefaultItemAnimator()
+            binding.listView.adapter = adapter
+        }
 
-    private val exportProfiles = registerForActivityResult(SaveProfiles()) { data ->
-        if (data != null) {
-            runOnDefaultDispatcher {
-                val profiles = SagerDatabase.proxyDao.getByGroup(DataStore.selectedGroup)
-                val links = profiles.mapNotNull { it.toLink() }.joinToString("\n")
-                try {
-                    (requireActivity() as MainActivity).contentResolver.openOutputStream(data)!!
-                        .bufferedWriter().use {
-                            it.write(links)
-                        }
-                    onMainDispatcher {
-                        snackbar(getString(R.string.copy_toast_msg)).show()
+        inner class TestAdapter : RecyclerView.Adapter<TestResultHolder>() {
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = TestResultHolder(
+                LayoutProfileBinding.inflate(layoutInflater, parent, false)
+            )
+
+            override fun onBindViewHolder(holder: TestResultHolder, position: Int) {
+                holder.bind(results[position])
+            }
+
+            override fun getItemCount() = results.size
+        }
+
+        inner class TestResultHolder(val binding: LayoutProfileBinding) :
+            RecyclerView.ViewHolder(binding.root) {
+            init {
+                binding.edit.isGone = true
+                binding.share.isGone = true
+            }
+
+            fun bind(profile: ProxyEntity) {
+                binding.profileName.text = profile.displayName()
+                binding.profileType.text = profile.displayType()
+
+                when (profile.status) {
+                    -1 -> {
+                        binding.profileStatus.text = profile.error
+                        binding.profileStatus.setTextColor(requireContext().getColorAttr(android.R.attr.textColorSecondary))
                     }
-                } catch (e: Exception) {
-                    Logs.w(e)
-                    onMainDispatcher {
-                        snackbar(e.readableMessage).show()
+                    0 -> {
+                        binding.profileStatus.setText(R.string.connection_test_testing)
+                        binding.profileStatus.setTextColor(requireContext().getColorAttr(android.R.attr.textColorSecondary))
+                    }
+                    1 -> {
+                        binding.profileStatus.text = getString(R.string.available, profile.ping)
+                        binding.profileStatus.setTextColor(requireContext().getColour(R.color.material_green_500))
+                    }
+                    2 -> {
+                        binding.profileStatus.text = profile.error
+                        binding.profileStatus.setTextColor(requireContext().getColour(R.color.material_red_500))
+                    }
+                    3 -> {
+                        binding.profileStatus.setText(R.string.unavailable)
+                        binding.profileStatus.setTextColor(requireContext().getColour(R.color.material_red_500))
                     }
                 }
 
+                if (profile.status == 3) {
+                    binding.content.setOnClickListener {
+                        MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.error_title)
+                            .setMessage(profile.error ?: "<?>")
+                            .setPositiveButton(android.R.string.ok, null).show()
+                    }
+                } else {
+                    binding.content.setOnClickListener {}
+                }
+            }
+        }
+
+    }
+
+    @Suppress("EXPERIMENTAL_API_USAGE")
+    fun tcpPingTest() {
+        val test = TestDialog()
+        val testJobs = mutableListOf<Job>()
+        val dialog = test.builder.show()
+        val mainJob = runOnDefaultDispatcher {
+            val profiles =
+                ConcurrentLinkedQueue(SagerDatabase.proxyDao.getByGroup(DataStore.selectedGroup))
+            val testPool = newFixedThreadPoolContext(5, "Connection test pool")
+            repeat(5) {
+                testJobs.add(launch(testPool) {
+                    while (isActive) {
+                        val profile = profiles.poll() ?: break
+
+                        if (!profile.requireBean().canTCPing()) {
+                            profile.status = -1
+                            profile.error =
+                                app.getString(R.string.connection_test_tcp_ping_unavailable)
+                            test.insert(profile)
+                            continue
+                        }
+
+                        profile.status = 0
+                        test.insert(profile)
+                        var address = profile.requireBean().serverAddress
+                        if (!address.isIpAddress()) {
+                            try {
+                                InetAddress.getAllByName(address).apply {
+                                    if (isNotEmpty()) {
+                                        address = this[0].hostAddress
+                                    }
+                                }
+                            } catch (ignored: UnknownHostException) {
+                            }
+                        }
+                        if (!isActive) break
+                        if (!address.isIpAddress()) {
+                            profile.status = 2
+                            profile.error = app.getString(R.string.connection_test_domain_not_found)
+                            test.update(profile)
+                            continue
+                        }
+                        try {
+                            val socket = Socket()
+                            val start = SystemClock.elapsedRealtime()
+                            socket.connect(
+                                InetSocketAddress(
+                                    address, profile.requireBean().serverPort
+                                ), 5000
+                            )
+                            if (!isActive) break
+                            profile.status = 1
+                            profile.ping = (SystemClock.elapsedRealtime() - start).toInt()
+                            test.update(profile)
+                            socket.close()
+                            if (!isActive) break
+                        } catch (e: IOException) {
+                            if (!isActive) break
+                            val message = e.readableMessage
+
+                            Logs.d(profile.displayName() + ": $message")
+
+                            profile.status = 2
+
+                            when {
+                                !message.contains("failed:") -> profile.error =
+                                    getString(R.string.connection_test_timeout)
+                                else -> when {
+                                    message.contains("ECONNREFUSED") -> {
+                                        profile.error = getString(R.string.connection_test_refused)
+                                    }
+                                    message.contains("ENETUNREACH") -> {
+                                        profile.error =
+                                            getString(R.string.connection_test_unreachable)
+                                    }
+                                    else -> {
+                                        profile.status = 3
+                                        profile.error = message
+                                    }
+                                }
+                            }
+                            test.update(profile)
+                            continue
+                        }
+                    }
+                })
+            }
+
+            testJobs.joinAll()
+            testPool.close()
+
+            ProfileManager.updateProfile(test.results)
+
+            onMainDispatcher {
+                test.binding.progressCircular.isGone = true
+                dialog.getButton(DialogInterface.BUTTON_NEGATIVE).setText(android.R.string.ok)
+            }
+        }
+        test.cancel = {
+            mainJob.cancel()
+            testJobs.forEach { it.cancel() }
+            runOnDefaultDispatcher {
+                ProfileManager.updateProfile(test.results)
             }
         }
     }
+
+    private val exportProfiles =
+        registerForActivityResult(ActivityResultContracts.CreateDocument()) { data ->
+            if (data != null) {
+                runOnDefaultDispatcher {
+                    val profiles = SagerDatabase.proxyDao.getByGroup(DataStore.selectedGroup)
+                    val links = profiles.mapNotNull { it.toLink() }.joinToString("\n")
+                    try {
+                        (requireActivity() as MainActivity).contentResolver.openOutputStream(data)!!
+                            .bufferedWriter().use {
+                                it.write(links)
+                            }
+                        onMainDispatcher {
+                            snackbar(getString(R.string.action_export_msg)).show()
+                        }
+                    } catch (e: Exception) {
+                        Logs.w(e)
+                        onMainDispatcher {
+                            snackbar(e.readableMessage).show()
+                        }
+                    }
+
+                }
+            }
+        }
 
     inner class GroupPagerAdapter : FragmentStateAdapter(this), ProfileManager.GroupListener {
 
@@ -803,6 +1053,8 @@ class ConfigurationFragment @JvmOverloads constructor(
                 val profileName: TextView = view.findViewById(R.id.profile_name)
                 val profileType: TextView = view.findViewById(R.id.profile_type)
                 val profileAddress: TextView = view.findViewById(R.id.profile_address)
+                val profileStatus: TextView = view.findViewById(R.id.profile_status)
+
                 val trafficText: TextView = view.findViewById(R.id.traffic_text)
                 val selectedView: LinearLayout = view.findViewById(R.id.selected_view)
                 val editButton: ImageView = view.findViewById(R.id.edit)
@@ -853,7 +1105,51 @@ class ConfigurationFragment @JvmOverloads constructor(
                             Formatter.formatFileSize(view.context, tx),
                             Formatter.formatFileSize(view.context, rx)
                         )
-                    } //  (trafficText.parent as View).isGone = !showTraffic && proxyGroup.isSubscription
+                    }
+
+                    var address = proxyEntity.displayAddress()
+                    if (showTraffic && address.length >= 30) {
+                        address = address.substring(0, 27) + "..."
+                    }
+
+                    if (proxyEntity.requireBean().name.isNotBlank()) {
+                        if (!(requireParentFragment() as ConfigurationFragment).alwaysShowAddress) {
+                            address = ""
+                        }
+                    }
+
+                    profileAddress.text = address
+                    (trafficText.parent as View).isGone =
+                        (!showTraffic || proxyEntity.status <= 0) && address.isBlank()
+
+                    if (proxyEntity.status <= 0) {
+                        if (showTraffic) {
+                            profileStatus.text = trafficText.text
+                            profileStatus.setTextColor(requireContext().getColorAttr(android.R.attr.textColorSecondary))
+                            trafficText.text = ""
+                        } else {
+                            profileStatus.text = ""
+                        }
+                    } else if (proxyEntity.status == 1) {
+                        profileStatus.text = getString(R.string.available, proxyEntity.ping)
+                        profileStatus.setTextColor(requireContext().getColour(R.color.material_green_500))
+                    } else {
+                        profileStatus.setTextColor(requireContext().getColour(R.color.material_red_500))
+                        if (proxyEntity.status == 2) {
+                            profileStatus.text = proxyEntity.error
+                        }
+                    }
+
+                    if (proxyEntity.status == 3) {
+                        profileStatus.setText(R.string.unavailable)
+                        profileStatus.setOnClickListener {
+                            MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.error_title)
+                                .setMessage(proxyEntity.error ?: "<?>")
+                                .setPositiveButton(android.R.string.ok, null).show()
+                        }
+                    } else {
+                        profileStatus.setOnClickListener(null)
+                    }
 
                     editButton.setOnClickListener {
                         it.context.startActivity(
@@ -863,7 +1159,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                         )
                     }
 
-                    shareLayout.isGone = select || !proxyEntity.haveLink()
+                    shareLayout.isGone = select
                     editButton.isGone = select
 
                     runOnDefaultDispatcher {
@@ -875,11 +1171,42 @@ class ConfigurationFragment @JvmOverloads constructor(
                             selectedView.visibility = if (selected) View.VISIBLE else View.INVISIBLE
                         }
 
+                        fun showShare(anchor: View) {
+                            val popup = PopupMenu(requireContext(), anchor)
+                            popup.menuInflater.inflate(R.menu.profile_share_menu, popup.menu)
+
+                            if (proxyEntity.vmessBean == null) {
+                                popup.menu.findItem(R.id.action_group_qr).subMenu.removeItem(R.id.action_v2rayn_qr)
+                                popup.menu.findItem(R.id.action_group_clipboard).subMenu.removeItem(
+                                    R.id.action_v2rayn_clipboard
+                                )
+                            }
+
+                            if (proxyEntity.configBean != null) {
+
+                                popup.menu.findItem(R.id.action_group_qr).subMenu.removeItem(R.id.action_standard_qr)
+                                popup.menu.findItem(R.id.action_group_clipboard).subMenu.removeItem(
+                                    R.id.action_standard_clipboard
+                                )
+                            } else if (!proxyEntity.haveLink()) {
+                                popup.menu.removeItem(R.id.action_group_qr)
+                                popup.menu.removeItem(R.id.action_group_clipboard)
+                            }
+
+                            if (proxyEntity.ptBean != null || proxyEntity.brookBean != null) {
+                                popup.menu.removeItem(R.id.action_group_configuration)
+                            }
+
+                            popup.setOnMenuItemClickListener(this@ConfigurationHolder)
+                            popup.show()
+                        }
+
                         if (!(select || proxyEntity.type == 8)) {
 
-                            val validateResult = if (DataStore.securityAdvisory) {
-                                proxyEntity.requireBean().isInsecure()
-                            } else ResultLocal
+                            val validateResult =
+                                if ((requireParentFragment() as ConfigurationFragment).securityAdvisory) {
+                                    proxyEntity.requireBean().isInsecure()
+                                } else ResultLocal
 
                             when (validateResult) {
                                 is ResultInsecure -> onMainDispatcher {
@@ -894,12 +1221,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                                             .setMessage(resources.openRawResource(validateResult.textRes)
                                                 .bufferedReader().use { it.readText() })
                                             .setPositiveButton(android.R.string.ok) { _, _ ->
-                                                val popup = PopupMenu(requireContext(), it)
-                                                popup.menuInflater.inflate(
-                                                    R.menu.socks_share_menu, popup.menu
-                                                )
-                                                popup.setOnMenuItemClickListener(this@ConfigurationHolder)
-                                                popup.show()
+                                                showShare(it)
                                             }.show().apply {
                                                 findViewById<TextView>(android.R.id.message)?.apply {
                                                     Linkify.addLinks(this, Linkify.WEB_URLS)
@@ -921,12 +1243,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                                             .setMessage(resources.openRawResource(validateResult.textRes)
                                                 .bufferedReader().use { it.readText() })
                                             .setPositiveButton(android.R.string.ok) { _, _ ->
-                                                val popup = PopupMenu(requireContext(), it)
-                                                popup.menuInflater.inflate(
-                                                    R.menu.socks_share_menu, popup.menu
-                                                )
-                                                popup.setOnMenuItemClickListener(this@ConfigurationHolder)
-                                                popup.show()
+                                                showShare(it)
                                             }.show().apply {
                                                 findViewById<TextView>(android.R.id.message)?.apply {
                                                     Linkify.addLinks(this, Linkify.WEB_URLS)
@@ -942,12 +1259,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                                     shareButton.setColorFilter(Color.GRAY)
 
                                     shareLayout.setOnClickListener {
-                                        val popup = PopupMenu(requireContext(), it)
-                                        popup.menuInflater.inflate(
-                                            R.menu.socks_share_menu, popup.menu
-                                        )
-                                        popup.setOnMenuItemClickListener(this@ConfigurationHolder)
-                                        popup.show()
+                                        showShare(it)
                                     }
                                 }
                             }
@@ -1015,12 +1327,22 @@ class ConfigurationFragment @JvmOverloads constructor(
 
             override fun onMenuItemClick(item: MenuItem): Boolean {
                 try {
-                    when (item.itemId) { // socks
-                        R.id.action_qr_code -> {
-                            showCode(entity.toLink()!!)
-                        }
-                        R.id.action_export_clipboard -> {
-                            export(entity.toLink()!!)
+                    when (item.itemId) {
+                        R.id.action_standard_qr -> showCode(entity.toLink()!!)
+                        R.id.action_standard_clipboard -> export(entity.toLink()!!)
+                        R.id.action_universal_qr -> showCode(entity.requireBean().toUniversalLink())
+                        R.id.action_universal_clipboard -> export(
+                            entity.requireBean().toUniversalLink()
+                        )
+                        R.id.action_v2rayn_qr -> showCode(entity.vmessBean!!.toV2rayN())
+                        R.id.action_v2rayn_clipboard -> export(entity.vmessBean!!.toV2rayN())
+                        R.id.action_config_export_clipboard -> export(entity.exportConfig().first)
+                        R.id.action_config_export_file -> {
+                            val cfg = entity.exportConfig()
+                            DataStore.serverConfig = cfg.first
+                            startFilesForResult(
+                                (parentFragment as ConfigurationFragment).exportConfig, cfg.second
+                            )
                         }
                     }
                 } catch (e: Exception) {
@@ -1033,5 +1355,43 @@ class ConfigurationFragment @JvmOverloads constructor(
         }
 
     }
+
+    private val exportConfig =
+        registerForActivityResult(ActivityResultContracts.CreateDocument()) { data ->
+            if (data != null) {
+                runOnDefaultDispatcher {
+                    try {
+                        (requireActivity() as MainActivity).contentResolver.openOutputStream(
+                            data
+                        )!!.bufferedWriter().use {
+                            it.write(DataStore.serverConfig)
+                        }
+                        onMainDispatcher {
+                            snackbar(getString(R.string.action_export_msg)).show()
+                        }
+                    } catch (e: Exception) {
+                        Logs.w(e)
+                        onMainDispatcher {
+                            snackbar(e.readableMessage).show()
+                        }
+                    }
+
+                }
+            }
+        }
+
+    companion object {
+        private fun Fragment.startFilesForResult(
+            launcher: ActivityResultLauncher<String>, input: String
+        ) {
+            try {
+                return launcher.launch(input)
+            } catch (_: ActivityNotFoundException) {
+            } catch (_: SecurityException) {
+            }
+            (activity as MainActivity).snackbar(getString(R.string.file_manager_missing)).show()
+        }
+    }
+
 
 }

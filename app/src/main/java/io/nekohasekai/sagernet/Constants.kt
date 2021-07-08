@@ -21,7 +21,7 @@
 
 package io.nekohasekai.sagernet
 
-const val CONNECTION_TEST_URL = "https://cp.cloudflare.com"
+const val CONNECTION_TEST_URL = "https://api.v2fly.org/checkConnection.svgz"
 
 object Key {
 
@@ -72,6 +72,7 @@ object Key {
     const val TRANSPROXY_PORT = "transproxyPort"
 
     const val CONNECTION_TEST_URL = "connectionTestURL"
+    const val PROBE_INTERVAL = "probeInterval"
 
     const val XRAY_UTLS_FINGERPRINT = "xrayFingerprint"
     const val ENABLE_MUX = "enableMux"
@@ -82,6 +83,9 @@ object Key {
     const val TCP_KEEP_ALIVE_INTERVAL = "tcpKeepAliveInterval"
     const val RULES_PROVIDER = "rulesProvider"
     const val ENABLE_LOG = "enableLog"
+
+    const val API_PORT = "apiPort"
+    const val ALWAYS_SHOW_ADDRESS = "alwaysShowAddress"
 
     const val PROFILE_DIRTY = "profileDirty"
     const val PROFILE_ID = "profileId"
@@ -126,6 +130,10 @@ object Key {
     const val SERVER_HEADERS = "serverHeaders"
     const val SERVER_MULTI_MODE = "serverMultiMode"
     const val SERVER_ALLOW_INSECURE = "serverAllowInsecure"
+
+    const val BALANCER_TYPE = "balancerType"
+    const val BALANCER_GROUP = "balancerGroup"
+    const val BALANCER_STRATEGY = "balancerStrategy"
 
     const val ROUTE_NAME = "routeName"
     const val ROUTE_DOMAIN = "routeDomain"

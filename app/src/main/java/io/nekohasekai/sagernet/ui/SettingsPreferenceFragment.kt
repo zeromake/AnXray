@@ -101,6 +101,7 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
                 true
             }
         }
+        val portLocalDns = findPreference<EditTextPreference>(Key.LOCAL_DNS_PORT)!!
 
 
         val showStopButton = findPreference<SwitchPreference>(Key.SHOW_STOP_BUTTON)!!
@@ -140,6 +141,9 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
         val xrayFingerprint = findPreference<SimpleMenuPreference>(Key.XRAY_UTLS_FINGERPRINT)!!
         val enableLog = findPreference<SwitchPreference>(Key.ENABLE_LOG)!!
 
+        val apiPort = findPreference<EditTextPreference>(Key.API_PORT)!!
+        val probeIndival = findPreference<EditTextPreference>(Key.PROBE_INTERVAL)!!
+
         transproxyPort.isEnabled = requireTransproxy.isChecked
         transproxyMode.isEnabled = requireTransproxy.isChecked
 
@@ -170,12 +174,11 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
             true
         }
 
-        val portLocalDns = findPreference<EditTextPreference>(Key.LOCAL_DNS_PORT)!!
-
         portLocalDns.setOnBindEditTextListener(EditTextPreferenceModifiers.Port)
         muxConcurrency.setOnBindEditTextListener(EditTextPreferenceModifiers.Port)
         portSocks5.setOnBindEditTextListener(EditTextPreferenceModifiers.Port)
         portHttp.setOnBindEditTextListener(EditTextPreferenceModifiers.Port)
+        apiPort.setOnBindEditTextListener(EditTextPreferenceModifiers.Port)
 
         val metedNetwork = findPreference<Preference>(Key.METERED_NETWORK)!!
         if (Build.VERSION.SDK_INT < 28) {
@@ -217,6 +220,9 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
 
         xrayFingerprint.onPreferenceChangeListener = reloadListener
         enableLog.onPreferenceChangeListener = reloadListener
+
+        probeIndival.setOnBindEditTextListener(EditTextPreferenceModifiers.Number)
+        probeIndival.onPreferenceChangeListener = reloadListener
     }
 
     override fun onResume() {
