@@ -67,6 +67,7 @@ import libv2ray.V2RayVPNServiceSupportsSet
 import java.io.File
 import java.io.IOException
 import java.util.*
+import java.util.concurrent.atomic.AtomicBoolean
 import io.nekohasekai.sagernet.plugin.PluginManager as PluginManagerS
 
 class ProxyInstance(val profile: ProxyEntity, val service: BaseService.Interface) {
@@ -402,7 +403,9 @@ class ProxyInstance(val profile: ProxyEntity, val service: BaseService.Interface
                 return@runOnDefaultDispatcher
             }
 
-            managedChannel = createChannel()
+            if (config.enableApi) {
+                managedChannel = createChannel()
+            }
 
             /*if (config.observatoryTags.isNotEmpty()) {
                 observatoryJob = launch(Dispatchers.IO) {
@@ -441,6 +444,7 @@ class ProxyInstance(val profile: ProxyEntity, val service: BaseService.Interface
                                 }
                             }
                         } catch (e: StatusException) {
+                            if (closed.get()) break
                             Logs.w(e)
                         }
                         delay(interval)
@@ -485,7 +489,10 @@ class ProxyInstance(val profile: ProxyEntity, val service: BaseService.Interface
         }
     }
 
+    var closed = AtomicBoolean()
+
     fun stop() {
+        closed.set(true)
         runOnDefaultDispatcher {
             DataStore.startedProxy = 0L
 
@@ -514,14 +521,14 @@ class ProxyInstance(val profile: ProxyEntity, val service: BaseService.Interface
     // ------------- stats -------------
 
     private suspend fun queryStats(tag: String, direct: String): Long {
-        try {
-            return queryStatsGrpc(tag, direct)
-        } catch (e: StatusException) {
-            if (e.status.description?.contains("shutdown") == true) {
-                return 0L
+        if (USE_STATS_SERVICE) {
+            try {
+                return queryStatsGrpc(tag, direct)
+            } catch (e: StatusException) {
+                if (closed.get()) return 0L
+                Logs.w(e)
+                if (isExpert) return 0L
             }
-            Logs.w(e)
-            if (isExpert) return 0L
         }
         return v2rayPoint.queryStats(tag, direct)
     }
@@ -544,25 +551,17 @@ class ProxyInstance(val profile: ProxyEntity, val service: BaseService.Interface
     }
 
     private val currentTags by lazy {
-        config.outboundTagsAll.filterKeys {
-            config.outboundTagsCurrent.contains(
-                it
-            )
-        }
-    }
-
-    private val statsTagList by lazy {
-        config.outboundTags.toMutableList().apply {
-            removeAll(config.outboundTagsCurrent)
-        }
+        mapOf(* config.outboundTagsCurrent.map {
+            it to config.outboundTagsAll[it] as ProxyEntity?
+        }.toTypedArray())
     }
 
     private val statsTags by lazy {
-        config.outboundTagsAll.filterKeys {
-            statsTagList.contains(
-                it
-            )
-        }
+        mapOf(*  config.outboundTags.toMutableList().apply {
+            removeAll(config.outboundTagsCurrent)
+        }.map {
+            it to config.outboundTagsAll[it] as ProxyEntity?
+        }.toTypedArray())
     }
 
     private val interTags by lazy {
@@ -605,11 +604,15 @@ class ProxyInstance(val profile: ProxyEntity, val service: BaseService.Interface
         val currentUpLink = currentTags.map { (tag, profile) ->
             queryStats(
                 tag, "uplink"
-            ).also { registerStats(profile, uplink = it) }
+            ).apply { profile?.also { registerStats(it, uplink = this) } }
         }
         val currentDownLink = currentTags.map { (tag, profile) ->
-            queryStats(tag, "downlink").also {
-                registerStats(profile, downlink = it)
+            queryStats(tag, "downlink").apply {
+                profile?.also {
+                    registerStats(
+                        it, downlink = this
+                    )
+                }
             }
         }
         uplinkProxy += currentUpLink.fold(0L) { acc, l -> acc + l }
@@ -622,11 +625,15 @@ class ProxyInstance(val profile: ProxyEntity, val service: BaseService.Interface
             uplinkProxy += statsTags.map { (tag, profile) ->
                 queryStats(
                     tag, "uplink"
-                ).also { registerStats(profile, uplink = it) }
+                ).apply { profile?.also { registerStats(it, uplink = this) } }
             }.fold(0L) { acc, l -> acc + l }
             downlinkProxy += statsTags.map { (tag, profile) ->
-                queryStats(tag, "downlink").also {
-                    registerStats(profile, downlink = it)
+                queryStats(tag, "downlink").apply {
+                    profile?.also {
+                        registerStats(
+                            it, downlink = this
+                        )
+                    }
                 }
             }.fold(0L) { acc, l -> acc + l }
         }

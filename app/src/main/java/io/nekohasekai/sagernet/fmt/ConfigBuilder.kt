@@ -42,6 +42,7 @@ import io.nekohasekai.sagernet.fmt.trojan.TrojanBean
 import io.nekohasekai.sagernet.fmt.v2ray.*
 import io.nekohasekai.sagernet.fmt.v2ray.V2RayConfig.*
 import io.nekohasekai.sagernet.ktx.Logs
+import io.nekohasekai.sagernet.ktx.USE_STATS_SERVICE
 import io.nekohasekai.sagernet.ktx.formatObject
 import io.nekohasekai.sagernet.ktx.isIpAddress
 import java.util.*
@@ -74,6 +75,7 @@ class V2rayBuildResult(
     var outboundTagsCurrent: ArrayList<String>,
     var outboundTagsAll: HashMap<String, ProxyEntity>,
     var directTag: String,
+    var enableApi: Boolean,
     var observatoryTags: MutableSet<String>,
 )
 
@@ -365,12 +367,13 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
             profileList: List<ProxyEntity>,
             isBalancer: Boolean,
             balancerStrategy: (() -> String)
-        ) {
+        ): String {
             var pastExternal = false
             lateinit var pastOutbound: OutboundObject
             val chainMap = LinkedHashMap<Int, ProxyEntity>()
             indexMap.add(isBalancer to chainMap)
             val chainOutbounds = ArrayList<OutboundObject>()
+            var outboundTag = ""
 
             profileList.forEachIndexed { index, proxyEntity ->
                 Logs.d("Index $index, proxyEntity: ")
@@ -390,6 +393,10 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                         "$tagOutbound-${proxyEntity.id}"
                     }
                     needGlobal = false
+                }
+
+                if (index == profileList.size - 1) {
+                    outboundTag = tagIn
                 }
 
                 if (needGlobal) {
@@ -789,14 +796,7 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                     chainOutbounds.add(outbound)
                 }
 
-            }
 
-            if (observatory == null) observatory = ObservatoryObject().apply {
-                probeUrl = DataStore.connectionTestURL
-                val testInterval = DataStore.probeInterval
-                if (testInterval > 0) {
-                    probeInterval = "${testInterval}s"
-                }
             }
 
             if (isBalancer) {
@@ -804,6 +804,13 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                 routing.balancers.add(RoutingObject.BalancerObject().apply {
                     tag = "balancer-$tagOutbound"
                     selector = chainOutbounds.map { it.tag }
+                    if (observatory == null) observatory = ObservatoryObject().apply {
+                        probeUrl = DataStore.connectionTestURL
+                        val testInterval = DataStore.probeInterval
+                        if (testInterval > 0) {
+                            probeInterval = "${testInterval}s"
+                        }
+                    }
                     if (observatory.subjectSelector == null) observatory.subjectSelector = HashSet()
                     observatory.subjectSelector.addAll(chainOutbounds.map { it.tag })
                     strategy = RoutingObject.BalancerObject.StrategyObject().apply {
@@ -827,14 +834,20 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                     })
                 }
             }
+
+            return outboundTag
+
         }
 
-        buildChain(TAG_AGENT, proxies, proxy.balancerBean != null) { proxy.balancerBean!!.strategy }
+        val tagProxy = buildChain(
+            TAG_AGENT, proxies, proxy.balancerBean != null
+        ) { proxy.balancerBean!!.strategy }
         val balancerMap = mutableMapOf<Long, String>()
+        val tagMap = mutableMapOf<Long, String>()
         extraProxies.forEach { (key, entities) ->
             val (id, balancer) = key
             val (isBalancer, strategy) = balancer
-            buildChain("$TAG_AGENT-$id", entities, isBalancer, strategy::value)
+            tagMap[id] = buildChain("$TAG_AGENT-$id", entities, isBalancer, strategy::value)
             if (isBalancer) {
                 balancerMap[id] = "balancer-$TAG_AGENT-$id"
             }
@@ -875,7 +888,7 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
                         0L -> TAG_AGENT
                         -1L -> TAG_DIRECT
                         -2L -> TAG_BLOCK
-                        else -> if (outId == proxy.id) TAG_AGENT else "$TAG_AGENT-$outId"
+                        else -> if (outId == proxy.id) tagProxy else tagMap[outId]
                     }
                 }
             })
@@ -1088,32 +1101,38 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
 
         api = ApiObject().apply {
             tag = TAG_API
-            services = mutableListOf("StatsService")
+            services = mutableListOf()
+            if (USE_STATS_SERVICE) {
+                services.add("StatsService")
+            }
             if (!observatory?.subjectSelector.isNullOrEmpty()) {
                 services.add("ObservatoryService")
             }
         }
 
-        inbounds.add(InboundObject().apply {
-            protocol = "dokodemo-door"
-            listen = LOCALHOST
-            port = apiPort
-            tag = TAG_API_IN
-            settings = LazyInboundConfigurationObject(
-                this,
-                DokodemoDoorInboundConfigurationObject().apply {
-                    address = LOCALHOST
-                    port = apiPort
-                    network = "tcp"
-                })
-        })
+        if (api.services.isEmpty()) {
+            api = null
+        } else {
+            inbounds.add(InboundObject().apply {
+                protocol = "dokodemo-door"
+                listen = LOCALHOST
+                port = apiPort
+                tag = TAG_API_IN
+                settings = LazyInboundConfigurationObject(
+                    this,
+                    DokodemoDoorInboundConfigurationObject().apply {
+                        address = LOCALHOST
+                        port = apiPort
+                        network = "tcp"
+                    })
+            })
 
-        routing.rules.add(0, RoutingObject.RuleObject().apply {
-            type = "field"
-            inboundTag = listOf(TAG_API_IN)
-            outboundTag = TAG_API
-        })
-
+            routing.rules.add(0, RoutingObject.RuleObject().apply {
+                type = "field"
+                inboundTag = listOf(TAG_API_IN)
+                outboundTag = TAG_API
+            })
+        }
     }.let {
         V2rayBuildResult(
             gson.toJson(it),
@@ -1123,6 +1142,7 @@ fun buildV2RayConfig(proxy: ProxyEntity): V2rayBuildResult {
             outboundTagsCurrent,
             outboundTagsAll,
             TAG_DIRECT,
+            !it.api?.services.isNullOrEmpty(),
             it.observatory?.subjectSelector ?: HashSet()
         )
     }
@@ -1135,7 +1155,6 @@ fun buildCustomConfig(proxy: ProxyEntity): V2rayBuildResult {
     val trafficSniffing = DataStore.trafficSniffing
 
     val bean = proxy.configBean!!
-
     val config = JSONObject(bean.content)
     val inbounds = config.getJSONArray("inbounds")?.filterIsInstance<JSONObject>()
         ?.map { gson.fromJson(it.toString(), InboundObject::class.java) }?.toMutableList()
@@ -1224,7 +1243,6 @@ fun buildCustomConfig(proxy: ProxyEntity): V2rayBuildResult {
         }
     } else {
         inbounds.add(InboundObject().apply {
-
             tag = TAG_SOCKS
             listen = bind
             port = DataStore.socksPort
@@ -1343,18 +1361,14 @@ fun buildCustomConfig(proxy: ProxyEntity): V2rayBuildResult {
 
     }
 
-    inbounds.forEach { it.init() }
-    config.set("inbounds", JSONArray(inbounds.map { JSONObject(gson.toJson(it)) }))
+    config["stats"] = JSONObject()
+    (config.getJSONObject("policy") ?: JSONObject().also {
+        config["policy"] = it
+    })["system"] = JSONObject(gson.toJson(PolicyObject.SystemPolicyObject().apply {
+        statsOutboundDownlink = true
+        statsOutboundUplink = true
+    }))
 
-    config.set("stats", JSONObject())
-    config.getOrPut("policy") {
-        JSONObject().apply {
-            set("system", JSONObject(gson.toJson(PolicyObject.SystemPolicyObject().apply {
-                statsOutboundDownlink = true
-                statsOutboundUplink = true
-            })))
-        }
-    }
 
     var requireWs = false
     if (config.contains("browserForwarder")) {
@@ -1403,15 +1417,87 @@ fun buildCustomConfig(proxy: ProxyEntity): V2rayBuildResult {
         directTag = directOutbound.tag
     }
 
-    if (flushOutbounds) {
-        outbounds!!.forEach { it.init() }
-        config.set("outbounds", JSONArray(outbounds.map { JSONObject(gson.toJson(it)) }))
+    var useApi = false
+    var flushApi = false
+    val api = config.getJSONObject("api")?.let {
+        gson.fromJson(it.toString(), ApiObject::class.java)
+    } ?: ApiObject()
+
+    var flushRouting = false
+    val routing = (config.getJSONObject("routing")?.let {
+        gson.fromJson(it.toString(), RoutingObject::class.java)
+    } ?: RoutingObject().apply {
+        domainStrategy = DataStore.domainStrategy
+        domainMatcher = DataStore.domainMatcher
+    }).apply {
+        if (rules == null) rules = mutableListOf()
     }
 
-    val observatoryTags =
+    if (USE_STATS_SERVICE) {
+        useApi = true
+
+        if (api.tag.isNullOrBlank()) {
+            api.tag = TAG_API
+            flushApi = true
+        }
+
+        var apiRule = routing.rules.find { it.outboundTag == api.tag }
+        if (apiRule == null) {
+            apiRule = RoutingObject.RuleObject().apply {
+                type = "field"
+                inboundTag = listOf(TAG_API_IN)
+                outboundTag = api.tag
+            }
+            routing.rules.add(apiRule)
+            flushRouting = true
+        }
+
+        val apiPort = DataStore.apiPort
+
+        val apiInTag = apiRule.inboundTag[0]
+        val apiInbound = inbounds.find { it.tag == apiInTag }?.apply {
+            if (protocol != "dokodemo-door") error("Inbound $tag with type $protocol, excepted dokodemo-door.")
+            port = apiPort
+        }
+
+        if (apiInbound == null) {
+            inbounds.add(InboundObject().apply {
+                protocol = "dokodemo-door"
+                listen = LOCALHOST
+                port = apiPort
+                tag = apiInTag
+                settings = LazyInboundConfigurationObject(
+                    this,
+                    DokodemoDoorInboundConfigurationObject().apply {
+                        address = LOCALHOST
+                        port = apiPort
+                        network = "tcp"
+                    })
+            })
+        }
+
+    } else if (!api.services.isNullOrEmpty()) {
+        useApi = true
+    }
+
+    if (flushApi) config["api"] = JSONObject(gson.toJson(api))
+    if (flushRouting) config["routing"] = JSONObject(gson.toJson(routing))
+
+    inbounds.forEach { it.init() }
+    config["inbounds"] = JSONArray(inbounds.map { JSONObject(gson.toJson(it)) })
+    if (flushOutbounds) {
+        outbounds!!.forEach { it.init() }
+        config["outbounds"] = JSONArray(outbounds.map { JSONObject(gson.toJson(it)) })
+    }
+
+    val observatoryTags = mutableSetOf<String>()
+    if (api.services?.contains("ObservatoryService") == true) {
         config.getJSONObject("observatory")?.getJSONArray("subjectSelector")?.map {
             it.toString()
-        }?.toHashSet() ?: mutableSetOf()
+        }?.toHashSet()?.also {
+            observatoryTags.addAll(it)
+        }
+    }
 
     return V2rayBuildResult(
         config.toStringPretty(),
@@ -1421,6 +1507,7 @@ fun buildCustomConfig(proxy: ProxyEntity): V2rayBuildResult {
         outboundTags,
         hashMapOf(),
         directTag,
+        useApi,
         observatoryTags
     )
 
