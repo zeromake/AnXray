@@ -112,7 +112,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                     mTitleTextView.typeface.style
                 )
                 mTitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_PX,
-                    (mTitleTextView.textSize * 1.25).toFloat()
+                    (mTitleTextView.textSize * 1.35).toFloat()
                 )
             }.onFailure {
                 Logs.w(it)

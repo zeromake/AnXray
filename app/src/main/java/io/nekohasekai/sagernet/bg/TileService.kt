@@ -33,7 +33,7 @@ import android.service.quicksettings.TileService as BaseTileService
 
 @RequiresApi(24)
 class TileService : BaseTileService(), SagerConnection.Callback {
-    private val iconIdle by lazy { Icon.createWithResource(this, R.drawable.ic_launcher_foreground) }
+    private val iconIdle by lazy { Icon.createWithResource(this, R.drawable.ic_service_ax) }
     private val iconBusy by lazy { Icon.createWithResource(this, R.drawable.ic_service_busy) }
     private val iconConnected by lazy {
         Icon.createWithResource(this,
