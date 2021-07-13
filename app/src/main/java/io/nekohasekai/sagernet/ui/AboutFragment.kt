@@ -158,7 +158,11 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
                     MaterialAboutActionItem.Builder()
                         .icon(R.drawable.ic_baseline_airplanemode_active_24)
                         .text(getString(R.string.version_x, "Xray-core"))
-                        .subText(Libv2ray.getVersion()).setOnClickAction { }.build()
+                        .subText(Libv2ray.getVersion()).setOnClickAction {
+                            requireContext().launchCustomTab(
+                                "https://github.com/XTLS/Xray-core/releases"
+                            )
+                        }.build()
                 ).apply {
                     for (plugin in PluginManager.fetchPlugins()) {
                         try {
