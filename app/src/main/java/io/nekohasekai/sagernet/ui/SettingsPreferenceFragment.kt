@@ -142,7 +142,6 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
         val enableLog = findPreference<SwitchPreference>(Key.ENABLE_LOG)!!
 
         val apiPort = findPreference<EditTextPreference>(Key.API_PORT)!!
-        val probeIndival = findPreference<EditTextPreference>(Key.PROBE_INTERVAL)!!
 
         transproxyPort.isEnabled = requireTransproxy.isChecked
         transproxyMode.isEnabled = requireTransproxy.isChecked

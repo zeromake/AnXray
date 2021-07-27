@@ -112,8 +112,6 @@ object DataStore : OnPreferenceDataStoreChangeListener {
             saveLocalPort(Key.API_PORT, value)
         }
 
-    var probeInterval by configurationStore.stringToInt(Key.PROBE_INTERVAL) { 300 }
-
     fun initGlobal() {
         if (configurationStore.getString(Key.SOCKS_PORT) == null) {
             socksPort = socksPort

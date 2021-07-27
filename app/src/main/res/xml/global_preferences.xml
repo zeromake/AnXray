@@ -206,11 +206,6 @@
             app:key="connectionTestURL"
             app:title="@string/connection_test_url"
             app:useSimpleSummaryProvider="true" />
-        <EditTextPreference
-            app:icon="@drawable/ic_baseline_local_bar_24"
-            app:key="probeInterval"
-            app:title="@string/probe_interval"
-            app:useSimpleSummaryProvider="true" />
         <com.takisoft.preferencex.SimpleMenuPreference
             app:defaultValue=""
             app:entries="@array/utls_entry"

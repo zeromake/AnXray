@@ -72,7 +72,6 @@ object Key {
     const val TRANSPROXY_PORT = "transproxyPort"
 
     const val CONNECTION_TEST_URL = "connectionTestURL"
-    const val PROBE_INTERVAL = "probeInterval"
 
     const val XRAY_UTLS_FINGERPRINT = "xrayFingerprint"
     const val ENABLE_MUX = "enableMux"
