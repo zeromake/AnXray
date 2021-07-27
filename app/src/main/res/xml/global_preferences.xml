@@ -19,8 +19,8 @@
             app:key="appTheme" />
         <com.takisoft.preferencex.SimpleMenuPreference
             app:defaultValue="0"
-            app:entries="@array/night_mode_entry"
-            app:entryValues="@array/night_mode_value"
+            app:entries="@array/night_mode"
+            app:entryValues="@array/int_array_4"
             app:icon="@drawable/ic_baseline_wb_sunny_24"
             app:key="nightTheme"
             app:title="@string/night_mode"
@@ -80,6 +80,44 @@
             app:title="@string/enable_log" />
     </PreferenceCategory>
 
+    <PreferenceCategory app:title="@string/vpn_settings">
+        <com.takisoft.preferencex.SimpleMenuPreference
+            app:defaultValue="1"
+            app:entries="@array/vpn_mode"
+            app:entryValues="@array/int_array_2"
+            app:icon="@drawable/ic_baseline_vpn_key_24"
+            app:key="vpnMode"
+            app:title="@string/vpn_mode"
+            app:useSimpleSummaryProvider="true" />
+        <SwitchPreference
+            app:icon="@drawable/ic_baseline_fast_forward_24"
+            app:key="multiThreadForward"
+            app:summary="@string/multi_thread_forwarding_sum"
+            app:title="@string/multi_thread_forwarding" />
+        <com.takisoft.preferencex.SimpleMenuPreference
+            app:defaultValue="0"
+            app:entries="@array/icmp_echo_strategy"
+            app:entryValues="@array/int_array_3"
+            app:icon="@drawable/ic_baseline_emoji_emotions_24"
+            app:key="icmpEchoStrategy"
+            app:title="@string/icmp_echo_strategy"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            app:defaultValue="50"
+            app:icon="@drawable/ic_baseline_timelapse_24"
+            app:key="icmpEchoReplyDelay"
+            app:title="@string/icmp_echo_reply_delay"
+            app:useSimpleSummaryProvider="true" />
+        <com.takisoft.preferencex.SimpleMenuPreference
+            app:defaultValue="0"
+            app:entries="@array/ip_other_strategy"
+            app:entryValues="@array/int_array_2"
+            app:icon="@drawable/ic_baseline_import_contacts_24"
+            app:key="ipOtherStrategy"
+            app:title="@string/ip_other_strategy"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
     <PreferenceCategory app:title="@string/cag_route">
         <SwitchPreference
             app:icon="@drawable/ic_navigation_apps"
@@ -87,10 +125,13 @@
             app:summary="@string/proxied_apps_summary"
             app:title="@string/proxied_apps" />
         <SwitchPreference
-            app:defaultValue="true"
             app:icon="@drawable/ic_baseline_legend_toggle_24"
             app:key="bypassLan"
             app:title="@string/route_opt_bypass_lan" />
+        <SwitchPreference
+            android:summary="@string/bypass_lan_in_core_only_sum"
+            app:key="bypassLanInCoreOnly"
+            app:title="@string/bypass_lan_in_core_only" />
         <com.takisoft.preferencex.SimpleMenuPreference
             app:defaultValue="IPIfNonMatch"
             app:entries="@array/domain_strategy"
@@ -114,49 +155,68 @@
             app:title="@string/traffic_sniffing" />
         <com.takisoft.preferencex.SimpleMenuPreference
             app:defaultValue="1"
-            app:entries="@array/ipv6_mode_entry"
-            app:entryValues="@array/ipv6_mode_value"
+            app:entries="@array/ipv6_mode"
+            app:entryValues="@array/int_array_4"
             app:icon="@drawable/ic_image_looks_6"
             app:key="ipv6Mode"
             app:title="@string/ipv6"
             app:useSimpleSummaryProvider="true" />
         <com.takisoft.preferencex.SimpleMenuPreference
             app:defaultValue="0"
-            app:entries="@array/rules_dat_provider_entry"
-            app:entryValues="@array/rules_dat_provider_value"
+            app:entries="@array/rules_dat_provider"
+            app:entryValues="@array/int_array_2"
             app:icon="@drawable/ic_baseline_rule_folder_24"
             app:key="rulesProvider"
             app:title="@string/route_rules_provider"
             app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 
-    <PreferenceCategory app:title="@string/cag_dns">
+    <PreferenceCategory app:title="@string/protocol_settings">
         <com.takisoft.preferencex.SimpleMenuPreference
-            android:defaultValue="2"
-            app:entries="@array/dns_mode_entry"
-            app:entryValues="@array/dns_mode_value"
+            app:defaultValue="0"
+            app:entries="@array/ss_aead_provider"
+            app:entryValues="@array/int_array_2"
+            app:icon="@drawable/ic_baseline_nfc_24"
+            app:key="providerShadowsocksAEAD"
+            app:title="@string/ss_aead_provider"
+            app:useSimpleSummaryProvider="true" />
+        <com.takisoft.preferencex.SimpleMenuPreference
+            app:defaultValue="0"
+            app:entries="@array/trojan_provider_experimental"
+            app:entryValues="@array/int_array_3"
+            app:key="providerTrojan"
+            app:title="@string/trojan_provider"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/cag_dns">
+        <EditTextPreference
+            app:defaultValue="https://1.0.0.1/dns-query"
             app:icon="@drawable/ic_action_dns"
-            app:key="dnsMode"
-            app:title="@string/dns_mode"
+            app:key="remoteDns"
+            app:title="@string/remote_dns"
             app:useSimpleSummaryProvider="true" />
-        <EditTextPreference
-            app:defaultValue="1.1.1.1"
-            app:key="systemDns"
-            app:title="@string/dns_system"
-            app:useSimpleSummaryProvider="true" />
-        <EditTextPreference
-            app:defaultValue="https://1.1.1.1/dns-query"
-            app:key="localDns"
-            app:title="@string/dns_local"
-            app:useSimpleSummaryProvider="true" />
-        <SwitchPreference
-            app:key="enableDomesticDns"
-            app:title="@string/enable_domestic_dns" />
         <EditTextPreference
             app:defaultValue="https+local://223.5.5.5/dns-query"
-            app:key="domesticDns"
-            app:title="@string/dns_domestic"
+            app:key="directDns"
+            app:title="@string/direct_dns"
             app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            app:defaultValue="domain:googleapis.cn googleapis.com"
+            app:icon="@drawable/ic_baseline_transform_24"
+            app:key="dnsHosts"
+            app:title="@string/dns_hosts"
+            app:useSimpleSummaryProvider="true" />
+        <SwitchPreference
+            app:icon="@drawable/ic_baseline_camera_24"
+            app:key="enableDnsRouting"
+            app:summary="@string/dns_routing_message"
+            app:title="@string/enable_dns_routing" />
+        <SwitchPreference
+            app:icon="@drawable/ic_action_lock"
+            app:key="enableFakeDns"
+            app:summary="@string/fakedns_message"
+            app:title="@string/enable_fakedns" />
     </PreferenceCategory>
 
     <PreferenceCategory app:title="@string/inbound_settings">
@@ -178,6 +238,11 @@
             app:title="@string/port_http"
             app:useSimpleSummaryProvider="true" />
         <SwitchPreference
+            app:defaultValue="true"
+            app:key="appendHttpProxy"
+            app:summary="@string/append_http_proxy_sum"
+            app:title="@string/append_http_proxy" />
+        <SwitchPreference
             app:icon="@drawable/ic_baseline_transgender_24"
             app:key="requireTransproxy"
             app:title="@string/require_transproxy" />
@@ -187,8 +252,8 @@
             app:useSimpleSummaryProvider="true" />
         <com.takisoft.preferencex.SimpleMenuPreference
             app:defaultValue="0"
-            app:entries="@array/transproxy_mode_entry"
-            app:entryValues="@array/transproxy_mode_value"
+            app:entries="@array/transproxy_mode"
+            app:entryValues="@array/int_array_2"
             app:key="transproxyMode"
             app:title="@string/transproxy_mode"
             app:useSimpleSummaryProvider="true" />
@@ -238,11 +303,6 @@
             app:key="tcpKeepAliveInterval"
             app:title="@string/tcp_keep_alive_interval"
             app:useSimpleSummaryProvider="true" />
-        <SwitchPreference
-            app:icon="@drawable/ic_baseline_airplanemode_active_24"
-            app:key="forceShadowsocksRust"
-            app:summary="@string/force_ss_sum"
-            app:title="@string/force_ss_rust" />
     </PreferenceCategory>
 
 

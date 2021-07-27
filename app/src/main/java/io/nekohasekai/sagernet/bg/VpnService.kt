@@ -28,6 +28,7 @@ import android.content.pm.PackageManager
 import android.net.LocalSocket
 import android.net.LocalSocketAddress
 import android.net.Network
+import android.net.ProxyInfo
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.system.ErrnoException
@@ -35,19 +36,26 @@ import android.system.Os
 import androidx.annotation.RequiresApi
 import io.nekohasekai.sagernet.*
 import io.nekohasekai.sagernet.database.DataStore
+import io.nekohasekai.sagernet.fmt.LOCALHOST
 import io.nekohasekai.sagernet.ktx.Logs
+import io.nekohasekai.sagernet.tun.TunThread
 import io.nekohasekai.sagernet.ui.VpnRequestActivity
 import io.nekohasekai.sagernet.utils.DefaultNetworkListener
+import io.nekohasekai.sagernet.utils.Subnet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileDescriptor
 import java.io.IOException
 import android.net.VpnService as BaseVpnService
 
-class VpnService : BaseVpnService(), BaseService.Interface {
+class VpnService : BaseVpnService(),
+    BaseService.Interface {
 
     companion object {
+        var instance: VpnService? = null
+
         const val VPN_MTU = 1500
         const val PRIVATE_VLAN4_CLIENT = "172.19.0.1"
         const val PRIVATE_VLAN4_ROUTER = "172.19.0.2"
@@ -66,7 +74,9 @@ class VpnService : BaseVpnService(), BaseService.Interface {
         }
     }
 
-    private var conn: ParcelFileDescriptor? = null
+    lateinit var conn: ParcelFileDescriptor
+    lateinit var tun: TunThread
+
     private var active = false
     private var metered = false
 
@@ -86,13 +96,15 @@ class VpnService : BaseVpnService(), BaseService.Interface {
 
     override suspend fun startProcesses() {
         super.startProcesses()
-        sendFd(startVpn())
+        startVpn()
     }
 
     override fun killProcesses(scope: CoroutineScope) {
         super.killProcesses(scope)
         active = false
-        conn?.close()
+        scope.launch { DefaultNetworkListener.stop(this) }
+        if (::conn.isInitialized) conn.close()
+        if (::tun.isInitialized) tun.interrupt()
     }
 
 
@@ -122,21 +134,23 @@ class VpnService : BaseVpnService(), BaseService.Interface {
 
     override suspend fun preInit() = DefaultNetworkListener.start(this) { underlyingNetwork = it }
 
-    inner class NullConnectionException : NullPointerException(), BaseService.ExpectedException {
+    inner class NullConnectionException : NullPointerException(),
+        BaseService.ExpectedException {
         override fun getLocalizedMessage() = getString(R.string.reboot_required)
     }
 
-    private suspend fun startVpn(): FileDescriptor {
+    private suspend fun startVpn() {
+        instance = this
 
         val profile = data.proxy!!.profile
         val builder = Builder().setConfigureIntent(SagerNet.configureIntent(this))
-            .setSession(profile.displayName()).setMtu(VPN_MTU)
-        val dnsMode = DataStore.dnsModeFinal
-        val useFakeDns = dnsMode in arrayOf(DnsMode.FAKEDNS, DnsMode.FAKEDNS_LOCAL)
+                .setSession(profile.displayName())
+                .setMtu(VPN_MTU)
+        val useFakeDns = DataStore.enableFakeDns
         val ipv6Mode = DataStore.ipv6Mode
+        val useNativeForwarding = DataStore.vpnMode == VpnMode.EXPERIMENTAL_FORWARDING
 
         builder.addAddress(PRIVATE_VLAN4_CLIENT, 30)
-        builder.addRoute("0.0.0.0", 0)
         if (ipv6Mode != IPv6Mode.ONLY) {
             if (useFakeDns) {
                 builder.addAddress(FAKEDNS_VLAN4_CLIENT, 15)
@@ -147,10 +161,21 @@ class VpnService : BaseVpnService(), BaseService.Interface {
             }
         }
 
-        if (ipv6Mode != IPv6Mode.DISABLE) {
-            builder.addAddress(PRIVATE_VLAN6_CLIENT, 126)
-
-            builder.addRoute("::", 0)
+        if (DataStore.bypassLan && !DataStore.bypassLanInCoreOnly) {
+            resources.getStringArray(R.array.bypass_private_route).forEach {
+                val subnet = Subnet.fromString(it)!!
+                builder.addRoute(subnet.address.hostAddress, subnet.prefixSize)
+            }
+            builder.addRoute(PRIVATE_VLAN4_ROUTER, 32)
+            // https://issuetracker.google.com/issues/149636790
+            if (ipv6Mode != IPv6Mode.DISABLE) {
+                builder.addRoute("2000::", 3)
+            }
+        } else {
+            builder.addRoute("0.0.0.0", 0)
+            if (ipv6Mode != IPv6Mode.DISABLE) {
+                builder.addRoute("::", 0)
+            }
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
@@ -158,18 +183,17 @@ class VpnService : BaseVpnService(), BaseService.Interface {
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) builder.setMetered(metered)
 
-        val useSystemDns = dnsMode == DnsMode.SYSTEM
-
         val packageName = packageName
         val proxyApps = DataStore.proxyApps
-        val needBypassRootUid = data.proxy!!.config.outboundTagsAll.values.any { it.ptBean != null }
+        val needBypassRootUid =
+            useNativeForwarding || data.proxy!!.config.outboundTagsAll.values.any { it.ptBean != null }
+        val needIncludeSelf =
+            useNativeForwarding || data.proxy!!.config.index.any { !it.isBalancer && it.chain.size > 1 }
         if (proxyApps || needBypassRootUid) {
             var bypass = DataStore.bypass
             val individual = mutableSetOf<String>()
             val allApps by lazy {
-                packageManager.getInstalledPackages(
-                    PackageManager.GET_PERMISSIONS or PackageManager.MATCH_UNINSTALLED_PACKAGES
-                ).filter {
+                packageManager.getInstalledPackages(PackageManager.GET_PERMISSIONS).filter {
                     when (it.packageName) {
                         packageName -> false
                         "android" -> true
@@ -194,7 +218,7 @@ class VpnService : BaseVpnService(), BaseService.Interface {
             }
 
             individual.apply {
-                if (bypass) add(packageName) else remove(packageName)
+                if (bypass xor needIncludeSelf) add(packageName) else remove(packageName)
             }.forEach {
                 try {
                     if (bypass) {
@@ -212,51 +236,52 @@ class VpnService : BaseVpnService(), BaseService.Interface {
             builder.addDisallowedApplication(packageName)
         }
 
-        if (useSystemDns) {
-            DataStore.systemDnsFinal.split("\n").forEach {
-                builder.addDnsServer(it)
-            }
-        } else {
-            builder.addDnsServer(PRIVATE_VLAN4_ROUTER)
+        builder.addDnsServer(PRIVATE_VLAN4_ROUTER)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && DataStore.appendHttpProxy && DataStore.requireHttp) {
+            builder.setHttpProxy(ProxyInfo.buildDirectProxy(LOCALHOST, DataStore.httpPort))
         }
 
         metered = DataStore.meteredNetwork
         active = true   // possible race condition here?
         if (Build.VERSION.SDK_INT >= 29) builder.setMetered(metered)
 
-        val conn = builder.establish() ?: throw NullConnectionException()
-        this.conn = conn
+        if (useNativeForwarding) builder.setBlocking(useNativeForwarding)
+        conn = builder.establish() ?: throw NullConnectionException()
 
-        val cmd = arrayListOf(
-            File(applicationInfo.nativeLibraryDir, Executable.TUN2SOCKS).canonicalPath,
-            "--netif-ipaddr",
-            PRIVATE_VLAN4_ROUTER,
-            "--socks-server-addr",
-            "127.0.0.1:${DataStore.socksPort}",
-            "--tunmtu",
-            VPN_MTU.toString(),
-            "--sock-path",
-            File(SagerNet.deviceStorage.noBackupFilesDir, "sock_path").canonicalPath,
-            "--loglevel",
-            "warning"
-        )
-        if (!useSystemDns) {
+        if (!useNativeForwarding) {
+            val cmd = arrayListOf(
+                File(applicationInfo.nativeLibraryDir, Executable.TUN2SOCKS).canonicalPath,
+                "--netif-ipaddr",
+                PRIVATE_VLAN4_ROUTER,
+                "--socks-server-addr",
+                "$LOCALHOST:${DataStore.socksPort}",
+                "--tunmtu",
+                VPN_MTU.toString(),
+                "--sock-path",
+                File(SagerNet.deviceStorage.noBackupFilesDir, "sock_path").canonicalPath,
+                "--loglevel",
+                "warning"
+            )
             cmd += "--dnsgw"
-            cmd += "127.0.0.1:${DataStore.localDNSPort}"
-        }
-        if (ipv6Mode != IPv6Mode.DISABLE) {
-            cmd += "--netif-ip6addr"
-            cmd += PRIVATE_VLAN6_ROUTER
-        }
-        cmd += "--enable-udprelay"
-        data.processes!!.start(cmd, onRestartCallback = {
-            try {
-                sendFd(conn.fileDescriptor)
-            } catch (e: ErrnoException) {
-                stopRunner(false, e.message)
+            cmd += "$LOCALHOST:${DataStore.localDNSPort}"
+            if (ipv6Mode != IPv6Mode.DISABLE) {
+                cmd += "--netif-ip6addr"
+                cmd += PRIVATE_VLAN6_ROUTER
             }
-        })
-        return conn.fileDescriptor
+            cmd += "--enable-udprelay"
+            data.proxy!!.processes.start(cmd, onRestartCallback = {
+                try {
+                    sendFd(conn.fileDescriptor)
+                } catch (e: ErrnoException) {
+                    stopRunner(false, e.message)
+                }
+            })
+            sendFd(conn.fileDescriptor)
+        } else {
+            tun = TunThread(this)
+            tun.start()
+        }
     }
 
     private suspend fun sendFd(fd: FileDescriptor) {

@@ -25,9 +25,6 @@
 [submodule "library/shadowsocksr/src/main/jni/re2"]
 	path = library/shadowsocksr/src/main/jni/re2
 	url = https://github.com/google/re2
-[submodule "core/src/main/jni/proxychains-ng"]
-	path = library/core/src/main/jni/proxychains
-	url = https://github.com/SagerNet/proxychains-ng
 [submodule "library/xray"]
 	path = library/xray
 	url = https://github.com/nekohasekai/AndroidLibXrayLite

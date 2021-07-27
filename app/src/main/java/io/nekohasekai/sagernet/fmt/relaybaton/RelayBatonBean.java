@@ -21,6 +21,8 @@
 
 package io.nekohasekai.sagernet.fmt.relaybaton;
 
+import androidx.annotation.NonNull;
+
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
 
@@ -28,6 +30,7 @@ import org.jetbrains.annotations.NotNull;
 
 import io.nekohasekai.sagernet.fmt.AbstractBean;
 import io.nekohasekai.sagernet.fmt.KryoConverters;
+import io.nekohasekai.sagernet.fmt.brook.BrookBean;
 
 public class RelayBatonBean extends AbstractBean {
 
@@ -35,11 +38,16 @@ public class RelayBatonBean extends AbstractBean {
     public String password;
 
     @Override
-    public void initDefaultValues() {
+    public void initializeDefaultValues() {
         if (serverPort == 0) serverPort = 443;
-        super.initDefaultValues();
+        super.initializeDefaultValues();
         if (username == null) username = "";
         if (password == null) password = "";
+    }
+
+    @Override
+    public boolean canMapping() {
+        return false;
     }
 
     @Override
@@ -63,4 +71,17 @@ public class RelayBatonBean extends AbstractBean {
     public RelayBatonBean clone() {
         return KryoConverters.deserialize(new RelayBatonBean(), KryoConverters.serialize(this));
     }
+
+    public static final Creator<RelayBatonBean> CREATOR = new CREATOR<RelayBatonBean>() {
+        @NonNull
+        @Override
+        public RelayBatonBean newInstance() {
+            return new RelayBatonBean();
+        }
+
+        @Override
+        public RelayBatonBean[] newArray(int size) {
+            return new RelayBatonBean[size];
+        }
+    };
 }

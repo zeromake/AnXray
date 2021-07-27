@@ -24,6 +24,7 @@ package io.nekohasekai.sagernet.ktx
 import cn.hutool.core.codec.Base64
 import cn.hutool.json.JSONObject
 import io.nekohasekai.sagernet.fmt.AbstractBean
+import io.nekohasekai.sagernet.fmt.Serializable
 import io.nekohasekai.sagernet.fmt.brook.parseBrook
 import io.nekohasekai.sagernet.fmt.gson.gson
 import io.nekohasekai.sagernet.fmt.http.parseHttp
@@ -37,8 +38,6 @@ import io.nekohasekai.sagernet.fmt.socks.parseSOCKS
 import io.nekohasekai.sagernet.fmt.trojan.parseTrojan
 import io.nekohasekai.sagernet.fmt.trojan_go.parseTrojanGo
 import io.nekohasekai.sagernet.fmt.v2ray.parseV2Ray
-import java.util.*
-import kotlin.collections.ArrayList
 
 fun formatObject(obj: Any): String {
     return gson.toJson(obj).let { JSONObject(it).toStringPretty() }
@@ -50,7 +49,9 @@ fun String.decodeBase64UrlSafe(): String {
     )
 }
 
-fun parseProxies(text: String, initType: Int = 0, badType: Int = 4): Pair<Int, List<AbstractBean>> {
+class SubscriptionFoundException(val link: String) : RuntimeException()
+
+fun parseProxies(text: String): List<AbstractBean> {
     val links = text.split('\n').flatMap { it.trim().split(' ') }
     val linksByLine = text.split('\n').map { it.trim() }
 
@@ -58,6 +59,10 @@ fun parseProxies(text: String, initType: Int = 0, badType: Int = 4): Pair<Int, L
     val entitiesByLine = ArrayList<AbstractBean>()
 
     fun String.parseLink(entities: ArrayList<AbstractBean>) {
+        if (startsWith("clash://install-config?") || startsWith("sn://subscription?")) {
+            throw SubscriptionFoundException(this)
+        }
+
         if (startsWith("ax://")) {
             Logs.d("Try parse universal link: $this")
             runCatching {
@@ -152,7 +157,7 @@ fun parseProxies(text: String, initType: Int = 0, badType: Int = 4): Pair<Int, L
         link.parseLink(entitiesByLine)
     }
     var isBadLink = false
-    if (entities.onEach { it.initDefaultValues() }.size == entitiesByLine.onEach { it.initDefaultValues() }.size) run test@{
+    if (entities.onEach { it.initializeDefaultValues() }.size == entitiesByLine.onEach { it.initializeDefaultValues() }.size) run test@{
         entities.forEachIndexed { index, bean ->
             val lineBean = entitiesByLine[index]
             if (bean == lineBean && bean.displayName() != lineBean.displayName()) {
@@ -161,14 +166,10 @@ fun parseProxies(text: String, initType: Int = 0, badType: Int = 4): Pair<Int, L
             }
         }
     }
-    return if (entities.size > entitiesByLine.size) {
-        initType to entities
-    } else {
-        (if (isBadLink) badType else initType) to entitiesByLine
-    }
+    return if (entities.size > entitiesByLine.size) entities else entitiesByLine
 }
 
-fun <T : AbstractBean> T.applyDefaultValues(): T {
-    initDefaultValues()
+fun <T : Serializable> T.applyDefaultValues(): T {
+    initializeDefaultValues()
     return this
 }

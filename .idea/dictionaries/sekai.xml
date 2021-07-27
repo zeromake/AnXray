@@ -5,6 +5,7 @@
       <w>aead</w>
       <w>alpn</w>
       <w>blackhole</w>
+      <w>conscrypt</w>
       <w>dokodemo</w>
       <w>downlink</w>
       <w>fakedns</w>
@@ -31,6 +32,7 @@
       <w>shadowsocks</w>
       <w>shadowsocksr</w>
       <w>snackbar</w>
+      <w>thiz</w>
       <w>tproxy</w>
       <w>transproxy</w>
       <w>uplink</w>

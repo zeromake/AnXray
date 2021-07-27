@@ -38,7 +38,10 @@ import io.nekohasekai.sagernet.aidl.ISagerNetServiceCallback
 import io.nekohasekai.sagernet.aidl.TrafficStats
 import io.nekohasekai.sagernet.database.DataStore
 import io.nekohasekai.sagernet.database.SagerDatabase
-import io.nekohasekai.sagernet.ktx.*
+import io.nekohasekai.sagernet.ktx.Logs
+import io.nekohasekai.sagernet.ktx.broadcastReceiver
+import io.nekohasekai.sagernet.ktx.readableMessage
+import io.nekohasekai.sagernet.ktx.runOnMainDispatcher
 import kotlinx.coroutines.*
 import java.net.UnknownHostException
 
@@ -48,7 +51,11 @@ class BaseService {
         /**
          * Idle state is only used by UI and will never be returned by BaseService.
          */
-        Idle, Connecting(true), Connected(true), Stopping, Stopped,
+        Idle,
+        Connecting(true),
+        Connected(true),
+        Stopping,
+        Stopped,
     }
 
     interface ExpectedException
@@ -57,7 +64,6 @@ class BaseService {
 
     class Data internal constructor(private val service: Interface) {
         var state = State.Stopped
-        var processes: GuardedProcessPool? = null
         var proxy: ProxyInstance? = null
         var notification: ServiceNotification? = null
 
@@ -65,7 +71,7 @@ class BaseService {
             when (intent.action) {
                 Intent.ACTION_SHUTDOWN -> service.persistStats()
                 Action.RELOAD -> service.forceLoad()
-                else -> service.stopRunner()
+                else -> service.stopRunner(keepState = false)
             }
         }
         var closeReceiverRegistered = false
@@ -80,7 +86,8 @@ class BaseService {
         }
     }
 
-    class Binder(private var data: Data? = null) : ISagerNetService.Stub(), CoroutineScope,
+    class Binder(private var data: Data? = null) : ISagerNetService.Stub(),
+        CoroutineScope,
         AutoCloseable {
         private val callbacks = object : RemoteCallbackList<ISagerNetServiceCallback>() {
             override fun onCallbackDied(callback: ISagerNetServiceCallback?, cookie: Any?) {
@@ -140,10 +147,12 @@ class BaseService {
                         if (bandwidthListeners.contains(item.asBinder())) {
                             item.trafficUpdated(proxy.profile.id, stats, true)
                             outs.forEach { (profileId, stats) ->
-                                item.trafficUpdated(profileId, TrafficStats(
-                                    txRateDirect = stats.uplinkTotal,
-                                    rxTotal = stats.downlinkTotal
-                                ), false)
+                                item.trafficUpdated(
+                                    profileId, TrafficStats(
+                                        txRateDirect = stats.uplinkTotal,
+                                        rxTotal = stats.downlinkTotal
+                                    ), false
+                                )
                             }
                         }
                     }
@@ -187,6 +196,10 @@ class BaseService {
             callbacks.unregister(cb)
         }
 
+        override fun protect(fd: Int) {
+            (data?.proxy?.service as VpnService?)?.protect(fd)
+        }
+
         fun stateChanged(s: State, msg: String?) = launch {
             val profileName = profileName
             broadcast { it.stateChanged(s.ordinal, profileName, msg) }
@@ -228,7 +241,7 @@ class BaseService {
         val isVpnService get() = false
 
         suspend fun startProcesses() {
-            data.proxy!!.start()
+            data.proxy!!.launch()
         }
 
         fun startRunner() {
@@ -238,20 +251,17 @@ class BaseService {
         }
 
         fun killProcesses(scope: CoroutineScope) {
-            data.proxy?.stop()
-            data.processes?.run {
-                close(scope)
-                data.processes = null
-            }
+            data.proxy?.destroy(scope)
         }
 
-        fun stopRunner(restart: Boolean = false, msg: String? = null) {
+        fun stopRunner(restart: Boolean = false, msg: String? = null, keepState: Boolean = true) {
             if (data.state == State.Stopping) return
             data.notification?.destroy()
             data.notification = null
             this as Service
 
             data.changeState(State.Stopping)
+
             runOnMainDispatcher {
                 data.connectingJob?.cancelAndJoin() // ensure stop connecting first
                 // we use a coroutineScope here to allow clean-up in parallel
@@ -262,18 +272,17 @@ class BaseService {
                         unregisterReceiver(data.closeReceiver)
                         data.closeReceiverRegistered = false
                     }
-                    onDefaultDispatcher {
-                        data.proxy?.shutdown()
-                    }
                     data.binder.profilePersisted(listOfNotNull(data.proxy).map { it.profile.id })
                     data.proxy = null
                 }
 
                 // change the state
                 data.changeState(State.Stopped, msg)
+                DataStore.startedProfile = 0L
 
                 // stop the service if nothing has bound to it
                 if (restart) startRunner() else { //   BootReceiver.enabled = false
+                    if (!keepState) DataStore.currentProfile = 0L
                     stopSelf()
                 }
             }
@@ -286,6 +295,7 @@ class BaseService {
         suspend fun preInit() {}
 
         fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+
             val data = data
             if (data.state != State.Stopped) return Service.START_NOT_STICKY
             val profile = SagerDatabase.proxyDao.getById(DataStore.selectedProxy)
@@ -315,14 +325,16 @@ class BaseService {
                     Executable.killAll()    // clean up old processes
                     preInit()
                     try {
-                        proxy.init(this@Interface)
+                        proxy.init()
                     } catch (jsonEx: JSONException) {
                         error(jsonEx.readableMessage.replace("cn.hutool.json.", ""))
                     }
-                    data.processes = GuardedProcessPool {
+                    proxy.processes = GuardedProcessPool {
                         Logs.w(it)
                         stopRunner(false, it.readableMessage)
                     }
+                    DataStore.currentProfile = profile.id
+                    DataStore.startedProfile = profile.id
                     startProcesses()
                     data.changeState(State.Connected)
                 } catch (_: CancellationException) { // if the job was cancelled, it is canceller's responsibility to call stopRunner
@@ -330,6 +342,7 @@ class BaseService {
                     stopRunner(false, getString(R.string.invalid_server))
                 } catch (exc: Throwable) {
                     if (exc is ExpectedException) Logs.d(exc.readableMessage) else Logs.w(exc)
+                    Logs.w(exc)
                     stopRunner(
                         false, "${getString(R.string.service_failed)}: ${exc.readableMessage}"
                     )

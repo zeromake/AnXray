@@ -25,9 +25,9 @@ import cn.hutool.core.codec.Base64
 import com.github.shadowsocks.plugin.PluginConfiguration
 import com.github.shadowsocks.plugin.PluginManager
 import com.github.shadowsocks.plugin.PluginOptions
-import io.nekohasekai.sagernet.DnsMode
 import io.nekohasekai.sagernet.IPv6Mode
 import io.nekohasekai.sagernet.database.DataStore
+import io.nekohasekai.sagernet.fmt.LOCALHOST
 import io.nekohasekai.sagernet.ktx.*
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import cn.hutool.json.JSONObject as HSONObject
@@ -215,24 +215,16 @@ fun ShadowsocksBean.buildShadowsocksConfig(port: Int): String {
     }
 
     val proxyConfig = HSONObject().also {
-        it["server"] = serverAddress
-        it["server_port"] = serverPort
+        it["server"] = finalAddress
+        it["server_port"] = finalPort
         it["method"] = method
         it["password"] = password
-        it["local_address"] = "127.0.0.1"
+        it["local_address"] = LOCALHOST
         it["local_port"] = port
-        it["local_udp_address"] = "127.0.0.1"
+        it["local_udp_address"] = LOCALHOST
         it["local_udp_port"] = port
         it["mode"] = "tcp_and_udp"
-        if (DataStore.dnsModeFinal != DnsMode.SYSTEM) {
-            it["dns"] = "127.0.0.1:${DataStore.localDNSPort}"
-        } else {
-            it["dns"] = DataStore.systemDnsFinal
-        }
-
-        it["ipv6_first"] = DataStore.dnsMode !in arrayOf(
-            DnsMode.FAKEDNS, DnsMode.FAKEDNS_LOCAL
-        ) && DataStore.ipv6Mode >= IPv6Mode.PREFER
+        it["ipv6_first"] = DataStore.ipv6Mode >= IPv6Mode.PREFER
         it["keep_alive"] = DataStore.tcpKeepAliveInterval
     }
 

@@ -18,15 +18,16 @@
     <string name="theme">Theme</string>
     <string name="document">Document</string>
 
-    <string name="group_default">Default</string>
+    <string name="group_default">Ungrouped</string>
     <string name="profile_type">socks5</string>
 
     <string name="quick_toggle">Toggle</string>
+    <string name="tile_title">Switcher</string>
 
     <!-- group -->
     <string name="group_name">Group name</string>
     <string name="group_update">Update</string>
-    <string name="group_subscription_link">Subscription link</string>
+    <string name="group_subscription_link">Subscription Link</string>
     <string name="group_name_required">Group name required</string>
     <string name="group_create">Create group</string>
     <string name="group_create_subscription">Create subscription</string>
@@ -36,7 +37,7 @@
     <string name="group_status_empty">Empty group</string>
     <string name="group_status_empty_subscription">Not updated yet</string>
     <string name="group_status_proxies">%d Proxies</string>
-    <string name="group_status_proxies_subscription">%d Proxies, updated on %s.</string>
+    <string name="group_status_proxies_subscription">%d Proxies | Updated on %s</string>
     <string name="group_no_difference">%s: No difference</string>
     <string name="group_updated">%s: Updated %d proxies</string>
     <string name="group_show_diff">Diff</string>
@@ -57,8 +58,6 @@
     <string name="cag_route">Route Settings</string>
     <string name="allow_access">Allow Connections from the LAN</string>
     <string name="allow_access_sum">Bind inbound servers to 0.0.0.0</string>
-    <string name="force_ss_rust">No Xray-core shadowsocks</string>
-    <string name="force_ss_sum">Force all shadowsocks profiles to use the same shadowsocks-rust backend as Shadowsocks Android</string>
     <string name="inbound_settings">Inbound Settings</string>
     <string name="general_settings">App Settings</string>
     <string name="require_http">Enable HTTP inbound</string>
@@ -75,7 +74,7 @@
     <string name="xray_utls_fingerprint">Xray uTLS Fingerprint</string>
     <string name="security_settings">Security Settings</string>
     <string name="allow_insecure">Allow Insecure</string>
-    <string name="allow_insecure_sum">Disable certificate checking. When enabled, this configuration is as secure as plaintext.</string>
+    <string name="allow_insecure_sum">Disable certificate checking. When enabled, this configuration is as secure as plaintext</string>
 
     <string name="traffic">%1$s↑ %2$s↓</string>
     <string name="speed_detail">Proxy： %1$s↑ %2$s↓\nDirect： %3$s↑ %4$s↓</string>
@@ -89,16 +88,14 @@
 
     <string name="cag_dns">DNS Settings</string>
 
-    <string name="dns_mode" translatable="false">DNS Mode</string>
-    <string name="dns_mode_system">System</string>
-    <string name="dns_mode_local">Local</string>
-    <string name="dns_mode_fakedns">FakeDNS</string>
-    <string name="dns_mode_fakedns_local">FakeDNS + Local</string>
+    <string name="remote_dns">Remote DNS</string>
+    <string name="direct_dns">Direct DNS</string>
+    <string name="enable_dns_routing">Enable DNS Routing</string>
+    <string name="dns_routing_message">Resolve domains in bypass routes with Direct DNS. Be aware of potential DNS leaks</string>
+    <string name="enable_fakedns">Enable FakeDNS</string>
+    <string name="fakedns_message">May cause other applications need to be restarted to reconnect to the network after proxy stopped</string>
+    <string name="dns_hosts">Domain rewrite</string>
 
-    <string name="dns_system">System DNS</string>
-    <string name="dns_local">Local DNS</string>
-    <string name="enable_domestic_dns">Enable Domestic DNS</string>
-    <string name="dns_domestic">Domestic DNS</string>
     <string name="port_local_dns">Local DNS Port</string>
     <string name="require_transproxy">Enable Transproxy Inbound</string>
     <string name="transproxy_mode">Transproxy Mode</string>
@@ -214,7 +211,6 @@
     <!-- notification category -->
     <string name="service_vpn">VPN Service</string>
     <string name="service_proxy">Proxy Service</string>
-    <string name="service_transproxy">Transproxy Service</string>
     <string name="forward_success">AnXray started.</string>
     <string name="invalid_server">Invalid server name</string>
     <string name="service_failed">Failed: </string>
@@ -265,7 +261,8 @@
 
     <string name="action_scan_china_apps">Scan China apps</string>
     <string name="action_export_file">Export to file</string>
-    <string name="action_export">Export to Clipboard</string>
+    <string name="action_export_clipboard">Export to Clipboard</string>
+    <string name="action_export">Export</string>
     <string name="action_import">Import from Clipboard</string>
     <string name="action_import_file">Import from file</string>
     <string name="action_export_msg">Successfully export!</string>
@@ -309,6 +306,7 @@
     <string name="cleartext_http_warning">Cleartext HTTP traffic is insecure</string>
     <string name="error_title">Error</string>
     <string name="no_proxies_found">No proxies found in the link</string>
+    <string name="no_proxies_found_in_subscription">No proxies found in the subscription</string>
     <string name="no_proxies_found_in_file">No proxies found in the file</string>
     <string name="no_proxies_found_in_clipboard">No proxies found in the clipboard</string>
     <string name="deduplication">Deduplication</string>
@@ -353,7 +351,6 @@
     <string name="leastPing" translatable="false">Ping</string>
 
     <string name="api_port">API Port</string>
-    <string name="experimental_api">Use Experimental API</string>
     <string name="probe_interval">Balancer observation interval</string>
 
     <string name="standard">Standard</string>
@@ -369,10 +366,100 @@
     <string name="connection_test_clear_results">Clear test results</string>
     <string name="connection_test_tcp_ping" translatable="false">TCPing</string>
     <string name="connection_test_tcp_ping_unavailable">TCPing unavailable</string>
+    <string name="connection_test_icmp_ping" translatable="false">ICMPing</string>
+    <string name="connection_test_icmp_ping_unavailable">ICMPing unavailable</string>
+    <string name="connection_test_url_test" translatable="false">URL Test</string>
+    <string name="connection_test_url_test_reuse_mode" translatable="false">URL Reuse</string>
+    <string name="connection_test_reorder">Reorder by delay</string>
 
     <string name="connection_test_domain_not_found">Domain not found</string>
     <string name="connection_test_refused">Connection refused</string>
     <string name="connection_test_unreachable">Unreachable</string>
     <string name="connection_test_timeout">Timeout</string>
+
+    <string name="append_http_proxy">Append HTTP Proxy to VPN</string>
+    <string name="append_http_proxy_sum">HTTP proxy will be used directly from (browser/ some supported apps), without going through the virtual NIC device (Android 10+)</string>
+
+    <string name="vpn_settings">VPN Settings</string>
+    <string name="vpn_mode">VPN Mode</string>
+    <string name="vpn_mode_forwarding">Native Forwarding</string>
+    <string name="multi_thread_forwarding">Concurrent Forwarding</string>
+    <string name="multi_thread_forwarding_sum">Forward TCP/IP packets using Kotlin coroutine, which uses more CPU and is only suitable for high traffic cases</string>
+    <string name="icmp_echo_strategy">ICMP Echo Strategy</string>
+    <string name="icmp_echo_reply_delay">ICMP Echo Reply Delay</string>
+    <string name="ip_other_strategy">Other Internet Protocol Strategy</string>
+
+    <string name="drop">Drop</string>
+    <string name="direct">Direct</string>
+    <string name="reply">Reply</string>
+
+    <string name="bypass_lan_in_core_only">Bypass LAN in Core Only</string>
+    <string name="bypass_lan_in_core_only_sum">If Lineage\'s "Allow hotspot clients to use VPNs" does not work, try this.</string>
+
+    <string name="protocol_settings">Protocol Settings</string>
+    <string name="trojan_provider">Trojan Provider</string>
+    <string name="ss_aead_provider">Shadowsocks AEAD Provider</string>
+
+    <string name="group_basic">Basic</string>
+    <string name="group_settings">Group Settings</string>
+    <string name="subscription">Subscription</string>
+    <string name="subscription_settings">Subscription Settings</string>
+
+    <string name="group_type">Group Type</string>
+    <string name="subscription_type">Subscription Type</string>
+    <string name="delete_group_prompt">Are you sure you want to remove this group?</string>
+    <string name="force_resolve">Force Resolve</string>
+    <string name="force_resolve_sum">Resolve all domain names to IP addresses when updating. Host and SNI will be automatically appended if possible</string>
+    <string name="force_vmess_aead">Force VMess AEAD</string>
+    <string name="force_vmess_aead_sum">Rewrite VMess configuration with insecure authentication method to AEAD (alterId 0)</string>
+    <string name="deduplication_sum">Remove duplicate configurations when updating</string>
+
+    <string name="raw">Raw</string>
+    <string name="update_settings">Update Settings</string>
+    <string name="auto_update">Auto Update</string>
+    <string name="auto_update_delay">Auto Update Delay (In minutes)</string>
+    <string name="update_when_connected_only">Update only when connected</string>
+    <string name="update_when_connected_only_sum">Prevent IP address leakage</string>
+    <string name="subscription_user_agent">UserAgent</string>
+
+    <string name="confirm">Confirm</string>
+    <string name="missing_plugin">Missing Plugin</string>
+    <string name="profile_requiring_plugin">%s requires the %s plugin to be installed, but it was not found.</string>
+    <string name="action_learn_more">LEARN MORE</string>
+    <string name="action_download">DOWNLOAD</string>
+
+    <string name="install_from_play_store">Install from Play Store</string>
+    <string name="install_from_fdroid">Install from F-Droid</string>
+    <string name="download">Download</string>
+    <string name="ooc_subscription_token" translatable="false">OOCv1 API Token</string>
+    <string name="ooc_subscription_token_invalid">Invalid OOCv1 Token</string>
+    <string name="update_subscription_warning">Proxy is not connected, are you sure you want to continue updating?</string>
+
+    <string name="ooc_warning">Warning</string>
+    <string name="ooc_missing_protocol">The subscription requires support for protocol %s, but it cannot be found. Unsupported profiles will be ignored.</string>
+
+    <string name="service_subscription">Subscription Update Service</string>
+    <string name="subscription_update">Subscription Update</string>
+    <string name="subscription_update_message">Updating %s …</string>
+
+    <string name="group_filter">Filter</string>
+    <string name="group_filter_groups">Groups</string>
+    <string name="group_filter_tags">Tags</string>
+
+    <string name="group_filter_ns">OOCv1 subscription is required to use the filtering feature</string>
+    <string name="group_filter_groups_nf">No groups in this subscription</string>
+    <string name="group_filter_tags_nf">No tags in this subscription</string>
+    <string name="subscription_used">%s Used</string>
+    <string name="subscription_traffic">%s Used / %s Remaining</string>
+    <string name="subscription_import">Import subscription</string>
+    <string name="subscription_import_message">Confirm you want to import subscription %s? If you are coming from an untrusted source, doing this may result in your IP and this behavior being leaked.</string>
+    <string name="profile_import">Import profile</string>
+    <string name="profile_import_message">Confirm you want to import profile %s?</string>
+    <string name="clear_profiles_message">Are you sure you want to clear this group?</string>
+
+    <string name="apps">Applications</string>
+    <string name="select_apps">Select Applications</string>
+    <string name="apps_message">%d Applications</string>
+    <string name="need_nf">To support application-based routing, the VPN Mode must be Native Forwarding.</string>
 
 </resources>

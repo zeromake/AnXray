@@ -103,18 +103,26 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
 
             runOnDefaultDispatcher {
                 val logDir = File(app.cacheDir, "log")
-                logDir.mkdir()
+                logDir.mkdirs()
                 val logFile = File.createTempFile("AnXray-", ".log", logDir)
                 logFile.outputStream().use { out ->
                     PrintWriter(out.bufferedWriter()).use { writer ->
                         writer.println("AnXray ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) on API ${Build.VERSION.SDK_INT}")
-                        @Suppress("DEPRECATION") writer.println(
-                            "ABI ${Build.CPU_ABI} (${
-                                Build.SUPPORTED_ABIS.joinToString(
-                                    ", "
-                                )
-                            })"
-                        )
+                        writer.println("----------------------------------------------------------------------")
+                        writer.println("BUILD: " + Build.ID)
+                        writer.println("DISPLAY: " + Build.DISPLAY)
+                        writer.println("PRODUCT: " + Build.PRODUCT)
+                        writer.println("DEVICE: " + Build.DEVICE)
+                        writer.println("BOARD: " + Build.BOARD)
+                        writer.println("MANUFACTURER: " + Build.MANUFACTURER)
+                        writer.println("BOOTLOADER: " + Build.BOOTLOADER)
+                        writer.println("HARDWARE: " + Build.HARDWARE)
+                        writer.println("SUPPORTED_ABIS: " + Build.SUPPORTED_ABIS.toList())
+                        writer.println("USER: " + Build.USER)
+                        writer.println("HOST: " + Build.HOST)
+                        writer.println("TYPE: " + Build.TYPE)
+                        writer.println("TAGS: " + Build.TAGS)
+                        writer.println("----------------------------------------------------------------------")
                         writer.flush()
                         try {
                             Runtime.getRuntime()

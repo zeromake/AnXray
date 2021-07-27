@@ -12,7 +12,6 @@
     <string name="menu_group">組</string>
     <string name="menu_about">關於</string>
 
-    <string name="group_default">預設</string>
     <string name="profile_type">socks5</string>
 
     <string name="quick_toggle">切換</string>
@@ -30,7 +29,7 @@
     <string name="group_status_empty">空組</string>
     <string name="group_status_empty_subscription">尚未更新</string>
     <string name="group_status_proxies">%d 個代理</string>
-    <string name="group_status_proxies_subscription">%d 個代理，上次更新於 %s。</string>
+    <string name="group_status_proxies_subscription">%d 個代理 | 更新於 %s</string>
     <string name="group_no_difference">%s: 沒有變化</string>
     <string name="group_updated">%s: 更新了 %d 個代理</string>
     <string name="group_show_diff">變化</string>
@@ -50,9 +49,7 @@
     <string name="allow_access_sum">繫結傳入伺服器至 0.0.0.0</string>
     <string name="cag_dns">DNS 設定</string>
     <string name="cag_route">路由設定</string>
-    <string name="force_ss_rust">不使用 Xray 路由 Shadowsocks</string>
-    <string name="force_ss_sum">強制所有 Shadowsocks 設定檔使用和 Shadowsocks Android 相同的 shadowsocks-rust 後端。</string>
-    <string name="inbound_settings">傳入設定</string>
+     <string name="inbound_settings">傳入設定</string>
     <string name="general_settings">應用程式設定</string>
     <string name="require_http">啟用 HTTP 傳入伺服器</string>
     <string name="cag_ws">WebSocket 設定</string>
@@ -115,7 +112,6 @@
     <!-- notification category -->
     <string name="service_vpn">VPN 服務</string>
     <string name="service_proxy">代理服務</string>
-    <string name="service_transproxy">透明代理服務</string>
     <string name="forward_success">AnXray 已啟動。</string>
     <string name="invalid_server">伺服器名稱無效</string>
     <string name="stop">停止</string>
@@ -140,7 +136,7 @@
 
     <string name="action_scan_china_apps">掃描中國應用程式</string>
     <string name="action_export_file">匯出至檔案</string>
-    <string name="action_export">匯出至剪貼簿</string>
+    <string name="action_export_clipboard">匯出至剪貼簿</string>
     <string name="action_import">自剪貼簿匯入</string>
     <string name="action_import_file">自檔案匯入</string>
     <string name="action_export_msg">匯出成功！</string>

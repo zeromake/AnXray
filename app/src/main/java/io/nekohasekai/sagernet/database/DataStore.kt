@@ -30,7 +30,6 @@ import io.nekohasekai.sagernet.database.preference.PublicDatabase
 import io.nekohasekai.sagernet.database.preference.RoomPreferenceDataStore
 import io.nekohasekai.sagernet.ktx.*
 import io.nekohasekai.sagernet.utils.DirectBoot
-import kotlin.properties.Delegates
 
 object DataStore : OnPreferenceDataStoreChangeListener {
 
@@ -47,7 +46,8 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     }
 
     var selectedProxy by configurationStore.long(Key.PROFILE_ID)
-    var startedProxy by configurationStore.long(Key.PROFILE_STARTED)
+    var currentProfile by configurationStore.long(Key.PROFILE_CURRENT)
+    var startedProfile by configurationStore.long(Key.PROFILE_STARTED)
 
     var selectedGroup by configurationStore.long(Key.PROFILE_GROUP) {
         SagerNet.currentProfile?.groupId ?: 0L
@@ -55,36 +55,32 @@ object DataStore : OnPreferenceDataStoreChangeListener {
 
     fun selectedGroupForImport(): Long {
         val groups = SagerDatabase.groupDao.allGroups()
-        val selectedGroup = SagerDatabase.groupDao.getById(selectedGroup) ?: groups[0]
-        var targetIndex by Delegates.notNull<Int>()
-        return if (!selectedGroup.isSubscription) {
-            selectedGroup.id
-        } else {
-            targetIndex = groups.indexOfFirst { !it.isSubscription }
-            groups[targetIndex].id
-        }
+        val sid = DataStore.selectedGroup
+        return (groups.find { it.id == sid && it.type == GroupType.BASIC }
+            ?: groups.find { it.ungrouped }!!).id
     }
 
-    var appTheme by configurationStore.int(Key.APP_THEME) { 0 }
-    var nightTheme by configurationStore.stringToInt(Key.NIGHT_THEME) { 0 }
+    var appTheme by configurationStore.int(Key.APP_THEME)
+    var nightTheme by configurationStore.stringToInt(Key.NIGHT_THEME)
     var serviceMode by configurationStore.string(Key.SERVICE_MODE) { Key.MODE_VPN }
 
-    var domainStrategy by configurationStore.string(Key.DOMAIN_STRATEGY) { "AsIs" }
+    var domainStrategy by configurationStore.string(Key.DOMAIN_STRATEGY) { "IPIfNonMatch" }
     var domainMatcher by configurationStore.string(Key.DOMAIN_MATCHER) { "mph" }
     var trafficSniffing by configurationStore.boolean(Key.TRAFFIC_SNIFFING) { true }
     var tcpKeepAliveInterval by configurationStore.stringToInt(Key.TCP_KEEP_ALIVE_INTERVAL) { 15 }
 
-    var bypassLan by configurationStore.boolean(Key.BYPASS_LAN) { false }
+    var bypassLan by configurationStore.boolean(Key.BYPASS_LAN)
+    var bypassLanInCoreOnly by configurationStore.boolean(Key.BYPASS_LAN_IN_CORE_ONLY)
 
     var allowAccess by configurationStore.boolean(Key.ALLOW_ACCESS)
     var speedInterval by configurationStore.stringToInt(Key.SPEED_INTERVAL)
 
-    var dnsMode by configurationStore.stringToInt(Key.DNS_MODE) { 2 }
-
-    var systemDns by configurationStore.string(Key.SYSTEM_DNS) { "1.1.1.1" }
-    var localDns by configurationStore.string(Key.LOCAL_DNS) { "https://1.1.1.1/dns-query" }
-    var enableDomesticDns by configurationStore.boolean(Key.ENABLE_DOMESTIC_DNS) { false }
-    var domesticDns by configurationStore.string(Key.DOMESTIC_DNS) { "https+local://223.5.5.5/dns-query" }
+    // https://github.com/SagerNet/SagerNet/issues/180
+    var remoteDns by configurationStore.string(Key.REMOTE_DNS) { "https://1.0.0.1/dns-query" }
+    var directDns by configurationStore.string(Key.DIRECT_DNS) { "https+local://223.5.5.5/dns-query" }
+    var enableDnsRouting by configurationStore.boolean(Key.ENABLE_DNS_ROUTING)
+    var enableFakeDns by configurationStore.boolean(Key.ENABLE_FAKEDNS)
+    var hosts by configurationStore.string(Key.DNS_HOSTS) { "domain:googleapis.cn googleapis.com" }
 
     var securityAdvisory by configurationStore.boolean(Key.SECURITY_ADVISORY) { true }
     var rulesProvider by configurationStore.stringToInt(Key.RULES_PROVIDER)
@@ -145,8 +141,6 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var proxyApps by configurationStore.boolean(Key.PROXY_APPS)
     var bypass by configurationStore.boolean(Key.BYPASS_MODE) { true }
     var individual by configurationStore.string(Key.INDIVIDUAL)
-    var forceShadowsocksRust by configurationStore.boolean(Key.FORCE_SHADOWSOCKS_RUST)
-
     var xrayFingerprint by configurationStore.string(Key.XRAY_UTLS_FINGERPRINT)
     var enableMux by configurationStore.boolean(Key.ENABLE_MUX)
     var enableMuxForAll by configurationStore.boolean(Key.ENABLE_MUX_FOR_ALL)
@@ -158,11 +152,23 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     val canToggleLocked: Boolean get() = configurationStore.getBoolean(Key.DIRECT_BOOT_AWARE) == true
     val directBootAware: Boolean get() = SagerNet.directBootSupported && canToggleLocked
 
-    var requireHttp by configurationStore.boolean(Key.REQUIRE_HTTP)
+    var requireHttp by configurationStore.boolean(Key.REQUIRE_HTTP) { true }
+    var appendHttpProxy by configurationStore.boolean(Key.APPEND_HTTP_PROXY) { true }
     var requireTransproxy by configurationStore.boolean(Key.REQUIRE_TRANSPROXY)
     var transproxyMode by configurationStore.stringToInt(Key.TRANSPROXY_MODE)
     var connectionTestURL by configurationStore.string(Key.CONNECTION_TEST_URL) { CONNECTION_TEST_URL }
     var alwaysShowAddress by configurationStore.boolean(Key.ALWAYS_SHOW_ADDRESS)
+
+    var vpnMode by configurationStore.stringToInt(Key.VPN_MODE) { VpnMode.EXPERIMENTAL_FORWARDING }
+    var multiThreadForward by configurationStore.boolean(Key.MULTI_THREAD_FORWARD)
+    var icmpEchoStrategy by configurationStore.stringToInt(Key.ICMP_ECHO_STRATEGY)
+    var icmpEchoReplyDelay by configurationStore.stringToLong(Key.ICMP_ECHO_REPLY_DELAY) { 50 }
+    var ipOtherStrategy by configurationStore.stringToInt(Key.IP_OTHER_STRATEGY) { PacketStrategy.DIRECT }
+
+    // protocol
+
+    var providerTrojan by configurationStore.stringToInt(Key.PROVIDER_TROJAN)
+    var providerShadowsocksAEAD by configurationStore.stringToInt(Key.PROVIDER_SS_AEAD)
 
     // cache
 
@@ -219,10 +225,24 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var routeOutboundRule by profileCacheStore.long(Key.ROUTE_OUTBOUND_RULE)
     var routeReverse by profileCacheStore.boolean(Key.ROUTE_REVERSE)
     var routeRedirect by profileCacheStore.string(Key.ROUTE_REDIRECT)
+    var routePackages by profileCacheStore.string(Key.ROUTE_PACKAGES)
     var serverConfig by profileCacheStore.string(Key.SERVER_CONFIG)
 
+    var groupName by profileCacheStore.string(Key.GROUP_NAME)
+    var groupType by profileCacheStore.stringToInt(Key.GROUP_TYPE)
+
+    var subscriptionType by profileCacheStore.stringToInt(Key.SUBSCRIPTION_TYPE)
+    var subscriptionLink by profileCacheStore.string(Key.SUBSCRIPTION_LINK)
+    var subscriptionToken by profileCacheStore.string(Key.SUBSCRIPTION_TOKEN)
+    var subscriptionForceResolve by profileCacheStore.boolean(Key.SUBSCRIPTION_FORCE_RESOLVE)
+    var subscriptionDeduplication by profileCacheStore.boolean(Key.SUBSCRIPTION_DEDUPLICATION)
+    var subscriptionForceVMessAEAD by profileCacheStore.boolean(Key.SUBSCRIPTION_FORCE_VMESS_AEAD) { true }
+    var subscriptionUpdateWhenConnectedOnly by profileCacheStore.boolean(Key.SUBSCRIPTION_UPDATE_WHEN_CONNECTED_ONLY)
+    var subscriptionUserAgent by profileCacheStore.string(Key.SUBSCRIPTION_USER_AGENT)
+    var subscriptionAutoUpdate by profileCacheStore.boolean(Key.SUBSCRIPTION_AUTO_UPDATE)
+    var subscriptionAutoUpdateDelay by profileCacheStore.stringToInt(Key.SUBSCRIPTION_AUTO_UPDATE_DELAY) { 1440 }
+
     var rulesFirstCreate by profileCacheStore.boolean("rulesFirstCreate")
-    var dnsModeFinal by profileCacheStore.int("dnsModeFinal")
     var systemDnsFinal by profileCacheStore.string("systemDnsFinal")
 
     override fun onPreferenceDataStoreChanged(store: PreferenceDataStore, key: String) {

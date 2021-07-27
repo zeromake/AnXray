@@ -45,12 +45,69 @@ import io.nekohasekai.sagernet.ktx.checkMT
 import io.nekohasekai.sagernet.ktx.runOnMainDispatcher
 import io.nekohasekai.sagernet.ui.MainActivity
 import io.nekohasekai.sagernet.utils.DeviceStorageApp
+import io.nekohasekai.sagernet.utils.PackageCache
 import io.nekohasekai.sagernet.utils.Theme
 import kotlinx.coroutines.DEBUG_PROPERTY_NAME
 import kotlinx.coroutines.DEBUG_PROPERTY_VALUE_ON
 import libv2ray.Libv2ray
+import org.conscrypt.Conscrypt
+import org.lsposed.hiddenapibypass.HiddenApiBypass
+import java.security.Security
+import androidx.work.Configuration as WorkConfiguration
 
-class SagerNet : Application() {
+class SagerNet : Application(),
+    WorkConfiguration.Provider {
+
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(base)
+
+        application = this
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            HiddenApiBypass.addHiddenApiExemptions("L");
+        }
+
+        System.setProperty(DEBUG_PROPERTY_NAME, DEBUG_PROPERTY_VALUE_ON)
+
+        DataStore.init()
+
+        updateNotificationChannels()
+
+        Seq.setContext(this)
+        val externalAssets = getExternalFilesDir(null) ?: filesDir
+        Libv2ray.setAssetsPath(externalAssets.absolutePath, "v2ray/")
+
+        runOnMainDispatcher {
+            externalAssets.mkdirs()
+            checkMT()
+
+            PackageCache.register()
+        }
+
+        Theme.apply(this)
+        Theme.applyNightTheme()
+
+        Security.insertProviderAt(Conscrypt.newProvider(), 1)
+    }
+
+    fun getPackageInfo(packageName: String) = packageManager.getPackageInfo(
+        packageName, if (Build.VERSION.SDK_INT >= 28) PackageManager.GET_SIGNING_CERTIFICATES
+        else @Suppress("DEPRECATION") PackageManager.GET_SIGNATURES
+    )!!
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        updateNotificationChannels()
+    }
+
+    override fun getWorkManagerConfiguration(): WorkConfiguration {
+        return WorkConfiguration.Builder()
+            .setDefaultProcessName("${BuildConfig.APPLICATION_ID}:bg")
+            .build()
+    }
 
     companion object {
         var started = false
@@ -112,9 +169,9 @@ class SagerNet : Application() {
                             application.getText(R.string.service_proxy),
                             NotificationManager.IMPORTANCE_LOW
                         ), NotificationChannel(
-                            "service-transproxy",
-                            application.getText(R.string.service_transproxy),
-                            NotificationManager.IMPORTANCE_LOW
+                            "service-subscription",
+                            application.getText(R.string.service_subscription),
+                            NotificationManager.IMPORTANCE_DEFAULT
                         )
                     )
                 )
@@ -131,44 +188,6 @@ class SagerNet : Application() {
         fun stopService() =
             application.sendBroadcast(Intent(Action.CLOSE).setPackage(application.packageName))
 
-    }
-
-    override fun attachBaseContext(base: Context) {
-        super.attachBaseContext(base)
-
-        application = this
-    }
-
-    override fun onCreate() {
-        super.onCreate()
-        System.setProperty(DEBUG_PROPERTY_NAME, DEBUG_PROPERTY_VALUE_ON)
-
-        DataStore.init()
-
-        updateNotificationChannels()
-
-        Seq.setContext(this)
-        val externalAssets = getExternalFilesDir(null) ?: filesDir
-        Libv2ray.setAssetsPath(externalAssets.absolutePath, "v2ray/")
-
-        runOnMainDispatcher {
-            externalAssets.mkdirs()
-
-            checkMT()
-        }
-
-        Theme.apply(this)
-        Theme.applyNightTheme()
-    }
-
-    fun getPackageInfo(packageName: String) = packageManager.getPackageInfo(
-        packageName, if (Build.VERSION.SDK_INT >= 28) PackageManager.GET_SIGNING_CERTIFICATES
-        else @Suppress("DEPRECATION") PackageManager.GET_SIGNATURES
-    )!!
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        updateNotificationChannels()
     }
 
 }

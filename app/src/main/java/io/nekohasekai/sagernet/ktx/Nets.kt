@@ -23,16 +23,25 @@ package io.nekohasekai.sagernet.ktx
 
 import android.os.Build
 import cn.hutool.core.lang.Validator
+import inet.ipaddr.IPAddress
+import inet.ipaddr.IPAddressString
 import io.nekohasekai.sagernet.SagerNet
+import io.nekohasekai.sagernet.bg.VpnService
 import io.nekohasekai.sagernet.database.DataStore
+import io.nekohasekai.sagernet.fmt.AbstractBean
+import io.nekohasekai.sagernet.fmt.LOCALHOST
+import okhttp3.ConnectionSpec
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
+import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Proxy
+import java.net.Socket
 
 val okHttpClient = OkHttpClient.Builder()
     .followRedirects(true)
     .followSslRedirects(true)
+    .connectionSpecs(listOf(ConnectionSpec.CLEARTEXT, ConnectionSpec.RESTRICTED_TLS))
     .build()
 
 private lateinit var proxyClient: OkHttpClient
@@ -48,9 +57,9 @@ fun createProxyClient(): OkHttpClient {
 
 fun requireProxy(): Proxy {
     return if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-        Proxy(Proxy.Type.SOCKS, InetSocketAddress("127.0.0.1", DataStore.socksPort))
+        Proxy(Proxy.Type.SOCKS, InetSocketAddress(LOCALHOST, DataStore.socksPort))
     } else {
-        Proxy(Proxy.Type.HTTP, InetSocketAddress("127.0.0.1", DataStore.httpPort))
+        Proxy(Proxy.Type.HTTP, InetSocketAddress(LOCALHOST, DataStore.httpPort))
     }
 }
 
@@ -79,4 +88,26 @@ fun String.unwrapHost(): String {
         return substring(1, length - 1).unwrapHost()
     }
     return this
+}
+
+fun AbstractBean.wrapUri(): String {
+    return if (Validator.isIpv6(finalAddress)) {
+        "[$finalAddress]:$finalPort"
+    } else {
+        "$finalAddress:$finalPort"
+    }
+}
+
+fun parseAddress(addressArray: ByteArray) = InetAddress.getByAddress(addressArray)
+val INET_TUN = IPAddressString(VpnService.PRIVATE_VLAN4_CLIENT).address.toInetAddress()
+val INET6_TUN = IPAddressString(VpnService.PRIVATE_VLAN6_CLIENT).address.toInetAddress()
+val INET_LO = IPAddressString(LOCALHOST).getAddress(IPAddress.IPVersion.IPV4).toInetAddress()
+
+fun mkPort(): Int {
+    val socket = Socket()
+    socket.reuseAddress = true
+    socket.bind(InetSocketAddress(0))
+    val port = socket.localPort
+    socket.close()
+    return port
 }

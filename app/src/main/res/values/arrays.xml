@@ -500,28 +500,13 @@
         <item>mph</item>
     </string-array>
 
-    <string-array name="dns_mode_entry">
-        <item>@string/dns_mode_system</item>
-        <!--        <item>@string/dns_mode_remote</item>-->
-        <item>@string/dns_mode_local</item>
-        <!--        <item>@string/dns_mode_fakedns</item>-->
-        <item>@string/dns_mode_fakedns_local</item>
-    </string-array>
 
-    <string-array name="dns_mode_value">
-        <item>0</item>
-        <!--        <item>1</item>-->
-        <item>2</item>
-        <!--        <item>3</item>-->
-        <item>4</item>
-    </string-array>
-
-    <string-array name="transproxy_mode_entry">
+    <string-array name="transproxy_mode">
         <item>REDIRECT</item>
         <item>TPROXY</item>
     </string-array>
 
-    <string-array name="transproxy_mode_value">
+    <string-array name="int_array_2">
         <item>0</item>
         <item>1</item>
     </string-array>
@@ -556,13 +541,13 @@
         <item>trojan-go</item>
     </string-array>
 
-    <string-array name="night_mode_entry">
+    <string-array name="night_mode">
         <item>@string/follow_system</item>
         <item>@string/enable</item>
         <item>@string/disable</item>
         <item>@string/auto</item>
     </string-array>
-    <string-array name="night_mode_value">
+    <string-array name="int_array_4">
         <item>0</item>
         <item>1</item>
         <item>2</item>
@@ -584,36 +569,21 @@
         <item>randomized</item>
     </string-array>
 
-    <string-array name="ipv6_mode_entry">
+    <string-array name="ipv6_mode">
         <item>@string/disable</item>
         <item>@string/enable</item>
         <item>@string/prefer</item>
         <item>@string/only</item>
     </string-array>
-    <string-array name="ipv6_mode_value">
-        <item>0</item>
-        <item>1</item>
-        <item>2</item>
-        <item>3</item>
-    </string-array>
 
-    <string-array name="rules_dat_provider_entry">
+    <string-array name="rules_dat_provider">
         <item>@string/route_rules_official</item>
         <item>Loyalsoldier/v2ray-rules-dat</item>
     </string-array>
 
-    <string-array name="rules_dat_provider_value">
-        <item>0</item>
-        <item>1</item>
-    </string-array>
-
-    <string-array name="balancer_type_entry">
+    <string-array name="balancer_type">
         <item>@string/list</item>
         <item>@string/menu_group</item>
-    </string-array>
-    <string-array name="balancer_type_value">
-        <item>0</item>
-        <item>1</item>
     </string-array>
 
     <string-array name="balancer_strategy_entry">
@@ -624,5 +594,60 @@
         <item />
         <item>leastPing</item>
     </string-array>
+
+    <string-array name="vpn_mode">
+        <item>Tun2socks</item>
+        <item>@string/vpn_mode_forwarding</item>
+    </string-array>
+
+    <string-array name="icmp_echo_strategy">
+        <item>@string/drop</item>
+        <item>@string/direct</item>
+        <item>@string/reply</item>
+    </string-array>
+
+    <string-array name="int_array_3">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
+    <string-array name="ip_other_strategy">
+        <item>@string/drop</item>
+        <item>@string/direct</item>
+    </string-array>
+
+    <string-array name="trojan_provider">
+        <item>V2Ray</item>
+        <item>Trojan-Go</item>
+    </string-array>
+
+    <string-array name="trojan_provider_value">
+        <item>0</item>
+        <item>2</item>
+    </string-array>
+
+    <string-array name="trojan_provider_experimental">
+        <item>V2Ray</item>
+        <item>Trojan</item>
+        <item>Trojan-Go</item>
+    </string-array>
+
+    <string-array name="ss_aead_provider">
+        <item>V2Ray</item>
+        <item>shadowsocks-rust</item>
+    </string-array>
+
+    <string-array name="group_types">
+        <item>@string/group_basic</item>
+        <item>@string/subscription</item>
+    </string-array>
+
+    <string-array name="subscription_types">
+        <item>@string/raw</item>
+        <item>OOCv1</item>
+        <item>SIP008</item>
+    </string-array>
+
 
 </resources>

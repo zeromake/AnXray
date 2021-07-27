@@ -36,13 +36,14 @@ import kotlinx.coroutines.launch
 
 @Database(
     entities = [ProxyGroup::class, ProxyEntity::class, RuleEntity::class, KeyValuePair::class],
-    version = 10
+    version = 2
 )
 @TypeConverters(value = [KryoConverters::class, GsonConverters::class])
 @GenerateRoomMigrations
 abstract class SagerDatabase : RoomDatabase() {
 
     companion object {
+        @Suppress("EXPERIMENTAL_API_USAGE")
         private val instance by lazy {
             SagerNet.application.getDatabasePath(Key.DB_PROFILE).parentFile?.mkdirs()
             Room.databaseBuilder(SagerNet.application, SagerDatabase::class.java, Key.DB_PROFILE)

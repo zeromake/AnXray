@@ -23,7 +23,6 @@ package io.nekohasekai.sagernet.fmt.shadowsocksr
 
 import cn.hutool.core.codec.Base64
 import cn.hutool.json.JSONObject
-import io.nekohasekai.sagernet.DnsMode
 import io.nekohasekai.sagernet.IPv6Mode
 import io.nekohasekai.sagernet.database.DataStore
 import io.nekohasekai.sagernet.ktx.applyDefaultValues
@@ -71,29 +70,26 @@ fun ShadowsocksRBean.toUri(): String {
             serverPort,
             protocol,
             method,
-            obfs,
-            Base64.encodeUrlSafe("%s".format(Locale.ENGLISH, password)),
-            Base64.encodeUrlSafe("%s".format(Locale.ENGLISH, obfsParam)),
-            Base64.encodeUrlSafe("%s".format(Locale.ENGLISH, protocolParam)),
-            Base64.encodeUrlSafe("%s".format(Locale.ENGLISH, name ?: ""))
+            obfs, Base64.encodeUrlSafe("%s".format(Locale.ENGLISH, password)), Base64.encodeUrlSafe("%s".format(Locale.ENGLISH, obfsParam)), Base64.encodeUrlSafe("%s".format(Locale.ENGLISH, protocolParam)), Base64.encodeUrlSafe(
+                "%s".format(
+                    Locale.ENGLISH, name ?: ""
+                )
+            )
         )
     )
 }
 
 fun ShadowsocksRBean.buildShadowsocksRConfig(): String {
     return JSONObject().also {
-        it["server"] = serverAddress
-        it["server_port"] = serverPort
+        it["server"] = finalAddress
+        it["server_port"] = finalPort
         it["method"] = method
         it["password"] = password
         it["protocol"] = protocol
         it["protocol_param"] = protocolParam
         it["obfs"] = obfs
         it["obfs_param"] = obfsParam
-        it["ipv6"] = DataStore.ipv6Mode == IPv6Mode.ONLY || (DataStore.dnsMode !in arrayOf(
-            DnsMode.FAKEDNS, DnsMode.FAKEDNS_LOCAL
-        ) && DataStore.ipv6Mode >= IPv6Mode.ENABLE)
-
+        it["ipv6"] = DataStore.ipv6Mode >= IPv6Mode.ENABLE
     }.toStringPretty()
 }
 

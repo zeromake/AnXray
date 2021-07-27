@@ -170,8 +170,8 @@ public abstract class StandardV2RayBean extends AbstractBean {
     // --------------------------------------- //
 
     @Override
-    public void initDefaultValues() {
-        super.initDefaultValues();
+    public void initializeDefaultValues() {
+        super.initializeDefaultValues();
 
         if (StrUtil.isBlank(uuid)) uuid = "";
 

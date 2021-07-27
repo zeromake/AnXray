@@ -23,10 +23,8 @@ package io.nekohasekai.sagernet.fmt.naive
 
 import cn.hutool.json.JSONObject
 import io.nekohasekai.sagernet.database.DataStore
-import io.nekohasekai.sagernet.ktx.linkBuilder
-import io.nekohasekai.sagernet.ktx.toLink
-import io.nekohasekai.sagernet.ktx.unUrlSafe
-import io.nekohasekai.sagernet.ktx.urlSafe
+import io.nekohasekai.sagernet.fmt.LOCALHOST
+import io.nekohasekai.sagernet.ktx.*
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 fun parseNaive(link: String): NaiveBean {
@@ -44,14 +42,14 @@ fun parseNaive(link: String): NaiveBean {
             it.unUrlSafe().replace("\r\n", "\n")
         }
         name = url.fragment
-        initDefaultValues()
+        initializeDefaultValues()
     }
 }
 
 fun NaiveBean.toUri(proxyOnly: Boolean = false): String {
     val builder = linkBuilder()
         .host(serverAddress)
-        .port(serverPort)
+        .port(finalPort)
     if (username.isNotBlank()) {
         builder.username(username)
         if (password.isNotBlank()) {
@@ -71,10 +69,13 @@ fun NaiveBean.toUri(proxyOnly: Boolean = false): String {
 
 fun NaiveBean.buildNaiveConfig(port: Int): String {
     return JSONObject().also {
-        it["listen"] = "socks://127.0.0.1:$port"
+        it["listen"] = "socks://$LOCALHOST:$port"
         it["proxy"] = toUri(true)
         if (extraHeaders.isNotBlank()) {
             it["extra-headers"] = extraHeaders.split("\n").joinToString("\r\n")
+        }
+        if (!serverAddress.isIpAddress() && finalAddress == LOCALHOST) {
+            it["host-resolver-rules"] = "MAP $serverAddress $LOCALHOST"
         }
         if (DataStore.enableLog) {
             it["log"] = ""

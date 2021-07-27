@@ -27,16 +27,18 @@ import android.os.Parcel
 import android.os.Parcelable
 import androidx.room.*
 import io.nekohasekai.sagernet.R
+import io.nekohasekai.sagernet.ShadowsocksAEADProvider
+import io.nekohasekai.sagernet.TrojanProvider
 import io.nekohasekai.sagernet.aidl.TrafficStats
 import io.nekohasekai.sagernet.fmt.AbstractBean
 import io.nekohasekai.sagernet.fmt.KryoConverters
 import io.nekohasekai.sagernet.fmt.brook.BrookBean
 import io.nekohasekai.sagernet.fmt.buildV2RayConfig
-import io.nekohasekai.sagernet.fmt.internal.ConfigBean
 import io.nekohasekai.sagernet.fmt.http.HttpBean
 import io.nekohasekai.sagernet.fmt.http.toUri
 import io.nekohasekai.sagernet.fmt.internal.BalancerBean
 import io.nekohasekai.sagernet.fmt.internal.ChainBean
+import io.nekohasekai.sagernet.fmt.internal.ConfigBean
 import io.nekohasekai.sagernet.fmt.naive.NaiveBean
 import io.nekohasekai.sagernet.fmt.naive.buildNaiveConfig
 import io.nekohasekai.sagernet.fmt.naive.toUri
@@ -65,6 +67,7 @@ import io.nekohasekai.sagernet.fmt.v2ray.VMessBean
 import io.nekohasekai.sagernet.fmt.v2ray.toUri
 import io.nekohasekai.sagernet.ktx.Logs
 import io.nekohasekai.sagernet.ktx.app
+import io.nekohasekai.sagernet.ktx.applyDefaultValues
 import io.nekohasekai.sagernet.ui.profile.*
 
 @Entity(
@@ -79,6 +82,7 @@ data class ProxyEntity(
     var rx: Long = 0L,
     var status: Int = 0,
     var ping: Int = 0,
+    var uuid: String = "",
     var error: String? = null,
     var socksBean: SOCKSBean? = null,
     var httpBean: HttpBean? = null,
@@ -118,6 +122,8 @@ data class ProxyEntity(
         val chainName by lazy { app.getString(R.string.proxy_chain) }
         val configName by lazy { app.getString(R.string.custom_config) }
         val balancerName by lazy { app.getString(R.string.balancer) }
+
+        private val placeHolderBean = SOCKSBean().applyDefaultValues()
 
         @JvmField
         val CREATOR = object : Parcelable.Creator<ProxyEntity> {
@@ -277,7 +283,7 @@ data class ProxyEntity(
         return with(requireBean()) {
             when (this) {
                 is ShadowsocksRBean -> buildShadowsocksRConfig()
-                is TrojanGoBean -> buildTrojanGoConfig(DataStore.socksPort, false, 0)
+                is TrojanGoBean -> buildTrojanGoConfig(DataStore.socksPort, false)
                 is NaiveBean -> buildNaiveConfig(DataStore.socksPort)
                 is RelayBatonBean -> {
                     name = "profile.toml"
@@ -287,7 +293,7 @@ data class ProxyEntity(
                     val config = buildV2RayConfig(this@ProxyEntity)
                     append(config.config)
 
-                    if (!config.index.all { it.second.isEmpty() }) {
+                    if (!config.index.all { it.chain.isEmpty() }) {
                         name = "profiles.txt"
                     }
 
@@ -310,7 +316,7 @@ data class ProxyEntity(
                                     append("\n\n")
                                     append(
                                         bean.buildTrojanGoConfig(
-                                            port, needChain, index
+                                            port, index == 0 && DataStore.enableMux
                                         )
                                     )
                                 }
@@ -336,13 +342,13 @@ data class ProxyEntity(
             TYPE_SSR -> true
             TYPE_VMESS -> false
             TYPE_VLESS -> false
-            TYPE_TROJAN -> false
+            TYPE_TROJAN -> DataStore.providerTrojan != TrojanProvider.V2RAY
             TYPE_TROJAN_GO -> true
             TYPE_NAIVE -> true
             TYPE_PING_TUNNEL -> true
             TYPE_RELAY_BATON -> true
             TYPE_BROOK -> true
-            TYPE_CONFIG -> false
+            TYPE_CONFIG -> true
 
             TYPE_CHAIN -> false
             TYPE_BALANCER -> false
@@ -369,7 +375,7 @@ data class ProxyEntity(
 
     fun useExternalShadowsocks(): Boolean {
         val bean = ssBean ?: return false
-        if (DataStore.forceShadowsocksRust || DataStore.tcpKeepAliveInterval != 15) return true
+        if (DataStore.providerShadowsocksAEAD == ShadowsocksAEADProvider.SHADOWSOCKS_RUST) return true
         if (bean.plugin.isNotBlank()) {
             Logs.d("Requiring plugin ${bean.plugin}")
             return true
@@ -513,8 +519,11 @@ data class ProxyEntity(
         @Query("DELETE FROM proxy_entities WHERE id IN (:proxyId)")
         fun deleteById(proxyId: Long): Int
 
+        @Query("DELETE FROM proxy_entities WHERE groupId = :groupId")
+        fun deleteByGroup(groupId: Long)
+
         @Query("DELETE FROM proxy_entities WHERE groupId in (:groupId)")
-        fun deleteByGroup(vararg groupId: Long)
+        fun deleteByGroup(groupId: LongArray)
 
         @Delete
         fun deleteProxy(proxy: ProxyEntity): Int

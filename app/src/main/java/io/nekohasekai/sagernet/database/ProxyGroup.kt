@@ -21,26 +21,80 @@
 
 package io.nekohasekai.sagernet.database
 
-import android.os.Parcelable
 import androidx.room.*
+import com.esotericsoftware.kryo.io.ByteBufferInput
+import com.esotericsoftware.kryo.io.ByteBufferOutput
+import io.nekohasekai.sagernet.GroupType
 import io.nekohasekai.sagernet.R
+import io.nekohasekai.sagernet.fmt.Serializable
 import io.nekohasekai.sagernet.ktx.app
-import kotlinx.parcelize.Parcelize
+import io.nekohasekai.sagernet.ktx.applyDefaultValues
 
 @Entity(tableName = "proxy_groups")
-@Parcelize
 data class ProxyGroup(
-    @PrimaryKey(autoGenerate = true)
-    var id: Long = 0L,
+    @PrimaryKey(autoGenerate = true) var id: Long = 0L,
     var userOrder: Long = 0L,
-    var isDefault: Boolean = false,
+    var ungrouped: Boolean = false,
     var name: String? = null,
-    var isSubscription: Boolean = false,
-    var subscriptionLink: String = "",
-    var lastUpdate: Long = 0L,
-    var type: Int = 0,
-    var deduplication: Boolean = false
-) : Parcelable {
+    var type: Int = GroupType.BASIC,
+    var subscription: SubscriptionBean? = null
+) : Serializable() {
+
+    @Transient
+    var export = false
+
+    override fun initializeDefaultValues() {
+        subscription?.applyDefaultValues()
+    }
+
+    override fun serializeToBuffer(output: ByteBufferOutput) {
+        if (export) {
+
+            output.writeInt(0)
+            output.writeInt(type)
+            val subscription = subscription!!
+            subscription.serializeForShare(output)
+
+        } else {
+            output.writeInt(0)
+            output.writeLong(id)
+            output.writeLong(userOrder)
+            output.writeBoolean(ungrouped)
+            output.writeString(name)
+            output.writeInt(type)
+
+            if (type == GroupType.SUBSCRIPTION) {
+                subscription?.serializeToBuffer(output)
+            }
+        }
+    }
+
+    override fun deserializeFromBuffer(input: ByteBufferInput) {
+        if (export) {
+            val version = input.readInt()
+
+            name = input.readString()
+            val subscription = SubscriptionBean()
+            this.subscription = subscription
+
+            subscription.deserializeFromShare(input)
+        } else {
+            val version = input.readInt()
+
+            id = input.readLong()
+            userOrder = input.readLong()
+            ungrouped = input.readBoolean()
+            name = input.readString()
+            type = input.readInt()
+
+            if (type == GroupType.SUBSCRIPTION) {
+                val subscription = SubscriptionBean()
+                this.subscription = subscription
+
+                subscription.deserializeFromBuffer(input)
+            }
+        }
+    }
 
     fun displayName(): String {
         return name.takeIf { !it.isNullOrBlank() } ?: app.getString(R.string.group_default)
@@ -52,6 +106,9 @@ data class ProxyGroup(
         @Query("SELECT * FROM proxy_groups ORDER BY userOrder")
         fun allGroups(): List<ProxyGroup>
 
+        @Query("SELECT * FROM proxy_groups WHERE type = ${GroupType.SUBSCRIPTION}")
+        suspend fun subscriptions(): List<ProxyGroup>
+
         @Query("SELECT MAX(userOrder) + 1 FROM proxy_groups")
         fun nextOrder(): Long?
 
@@ -62,7 +119,10 @@ data class ProxyGroup(
         fun deleteById(groupId: Long): Int
 
         @Delete
-        fun deleteGroup(vararg group: ProxyGroup)
+        fun deleteGroup(group: ProxyGroup)
+
+        @Delete
+        fun deleteGroup(groupList: List<ProxyGroup>)
 
         @Insert
         fun createGroup(group: ProxyGroup): Long
@@ -70,6 +130,16 @@ data class ProxyGroup(
         @Update
         fun updateGroup(group: ProxyGroup)
 
+    }
+
+    companion object CREATOR : Serializable.CREATOR<ProxyGroup>() {
+        override fun newInstance(): ProxyGroup {
+            return ProxyGroup()
+        }
+
+        override fun newArray(size: Int): Array<ProxyGroup?> {
+            return arrayOfNulls(size)
+        }
     }
 
 }

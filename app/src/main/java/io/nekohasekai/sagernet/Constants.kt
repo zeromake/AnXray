@@ -37,13 +37,12 @@ object Key {
     const val SERVICE_MODE = "serviceMode"
     const val MODE_VPN = "vpn"
     const val MODE_PROXY = "proxy"
-    const val MODE_TRANS = "transproxy"
 
-    const val DNS_MODE = "dnsMode"
-    const val SYSTEM_DNS = "systemDns"
-    const val LOCAL_DNS = "localDns"
-    const val ENABLE_DOMESTIC_DNS = "enableDomesticDns"
-    const val DOMESTIC_DNS = "domesticDns"
+    const val REMOTE_DNS = "remoteDns"
+    const val DIRECT_DNS = "directDns"
+    const val ENABLE_DNS_ROUTING = "enableDnsRouting"
+    const val ENABLE_FAKEDNS = "enableFakeDns"
+    const val DNS_HOSTS = "dnsHosts"
 
     const val IPV6_MODE = "ipv6Mode"
 
@@ -56,15 +55,16 @@ object Key {
     const val DOMAIN_MATCHER = "domainMatcher"
     const val TRAFFIC_SNIFFING = "trafficSniffing"
     const val BYPASS_LAN = "bypassLan"
+    const val BYPASS_LAN_IN_CORE_ONLY = "bypassLanInCoreOnly"
 
     const val SOCKS_PORT = "socksPort"
-    const val FORCE_SHADOWSOCKS_RUST = "forceShadowsocksRust"
     const val ALLOW_ACCESS = "allowAccess"
     const val SPEED_INTERVAL = "speedInterval"
     const val SHOW_DIRECT_SPEED = "showDirectSpeed"
     const val LOCAL_DNS_PORT = "portLocalDns"
 
     const val REQUIRE_HTTP = "requireHttp"
+    const val APPEND_HTTP_PROXY = "appendHttpProxy"
     const val HTTP_PORT = "httpPort"
 
     const val REQUIRE_TRANSPROXY = "requireTransproxy"
@@ -85,12 +85,23 @@ object Key {
 
     const val API_PORT = "apiPort"
     const val ALWAYS_SHOW_ADDRESS = "alwaysShowAddress"
+    const val ENABLE_EXPERIMENTAL_TUN = "enableExperimentalTun"
+
+    const val VPN_MODE = "vpnMode"
+    const val MULTI_THREAD_FORWARD = "multiThreadForward"
+    const val ICMP_ECHO_STRATEGY = "icmpEchoStrategy"
+    const val ICMP_ECHO_REPLY_DELAY = "icmpEchoReplyDelay"
+    const val IP_OTHER_STRATEGY = "ipOtherStrategy"
+
+    const val PROVIDER_TROJAN = "providerTrojan"
+    const val PROVIDER_SS_AEAD = "providerShadowsocksAEAD"
 
     const val PROFILE_DIRTY = "profileDirty"
     const val PROFILE_ID = "profileId"
     const val PROFILE_NAME = "profileName"
     const val PROFILE_GROUP = "profileGroup"
     const val PROFILE_STARTED = "profileStarted"
+    const val PROFILE_CURRENT = "profileCurrent"
 
     const val SERVER_ADDRESS = "serverAddress"
     const val SERVER_PORT = "serverPort"
@@ -147,14 +158,35 @@ object Key {
     const val ROUTE_OUTBOUND_RULE = "routeOutboundRule"
     const val ROUTE_REVERSE = "routeReverse"
     const val ROUTE_REDIRECT = "routeRedirect"
+    const val ROUTE_PACKAGES = "routePackages"
+
+    const val GROUP_NAME = "groupName"
+    const val GROUP_TYPE = "groupType"
+
+    const val GROUP_SUBSCRIPTION = "groupSubscription"
+    const val SUBSCRIPTION_TYPE = "subscriptionType"
+    const val SUBSCRIPTION_LINK = "subscriptionLink"
+    const val SUBSCRIPTION_TOKEN = "subscriptionToken"
+    const val SUBSCRIPTION_FORCE_RESOLVE = "subscriptionForceResolve"
+    const val SUBSCRIPTION_DEDUPLICATION = "subscriptionDeduplication"
+    const val SUBSCRIPTION_FORCE_VMESS_AEAD = "subscriptionForceVMessAEAD"
+    const val SUBSCRIPTION_UPDATE = "subscriptionUpdate"
+    const val SUBSCRIPTION_UPDATE_WHEN_CONNECTED_ONLY = "subscriptionUpdateWhenConnectedOnly"
+    const val SUBSCRIPTION_USER_AGENT = "subscriptionUserAgent"
+    const val SUBSCRIPTION_AUTO_UPDATE = "subscriptionAutoUpdate"
+    const val SUBSCRIPTION_AUTO_UPDATE_DELAY = "subscriptionAutoUpdateDelay"
 
 }
 
-object DnsMode {
-    const val SYSTEM = 0
-    const val LOCAL = 2
-    const val FAKEDNS = 3
-    const val FAKEDNS_LOCAL = 4
+object TrojanProvider {
+    const val V2RAY = 0
+    const val TROJAN = 1
+    const val TROJAN_GO = 2
+}
+
+object ShadowsocksAEADProvider {
+    const val V2RAY = 0
+    const val SHADOWSOCKS_RUST = 1
 }
 
 object IPv6Mode {
@@ -162,6 +194,34 @@ object IPv6Mode {
     const val ENABLE = 1
     const val PREFER = 2
     const val ONLY = 3
+}
+
+object VpnMode {
+    const val TUN2SOCKS = 0
+    const val EXPERIMENTAL_FORWARDING = 1
+}
+
+object PacketStrategy {
+    const val DIRECT = 0
+    const val DROP = 1
+    const val REPLY = 2
+}
+
+object GroupType {
+    const val BASIC = 0
+    const val SUBSCRIPTION = 1
+}
+
+object SubscriptionType {
+    const val RAW = 0
+    const val OOCv1 = 1
+    const val SIP008 = 2
+}
+
+object ExtraType {
+    const val NONE = 0
+    const val OOCv1 = 1
+    const val SIP008 = 2
 }
 
 object Action {
