@@ -380,6 +380,8 @@ object RawUpdater : GroupUpdater() {
 
         try {
             return parseProxies(text).takeIf { it.isNotEmpty() } ?: error("Not found")
+        } catch (e: SubscriptionFoundException) {
+            throw e
         } catch (ignored: Exception) {
         }
 
