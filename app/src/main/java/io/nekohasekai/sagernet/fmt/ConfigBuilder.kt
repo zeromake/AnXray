@@ -56,7 +56,8 @@ const val TAG_HTTP = "http"
 const val TAG_TRANS = "trans"
 
 const val TAG_AGENT = "proxy"
-const val TAG_DIRECT = "bypass"
+const val TAG_DIRECT = "direct"
+const val TAG_BYPASS = "bypass"
 const val TAG_BLOCK = "block"
 
 const val TAG_DNS_IN = "dns-in"
@@ -75,7 +76,7 @@ class V2rayBuildResult(
     var outboundTags: List<String>,
     var outboundTagsCurrent: List<String>,
     var outboundTagsAll: Map<String, ProxyEntity>,
-    var directTag: String,
+    var bypassTag: String,
     var enableApi: Boolean,
     var observatoryTags: Set<String>,
     var uidMap: Map<Int, Int>
@@ -96,7 +97,7 @@ fun buildV2RayConfig(
         val bean = requireBean()
         if (bean is ChainBean) {
             val beans = SagerDatabase.proxyDao.getEntities(bean.proxies)
-            val beansMap = beans.map { it.id to it }.toMap()
+            val beansMap = beans.associateBy { it.id }
             val beanList = ArrayList<ProxyEntity>()
             for (proxyId in bean.proxies) {
                 val item = beansMap[proxyId] ?: continue
@@ -113,7 +114,7 @@ fun buildV2RayConfig(
             } else {
                 SagerDatabase.proxyDao.getByGroup(bean.groupId)
             }
-            val beansMap = beans.map { it.id to it }.toMap()
+            val beansMap = beans.associateBy { it.id }
             val beanList = ArrayList<ProxyEntity>()
             for (proxyId in beansMap.keys) {
                 val item = beansMap[proxyId] ?: continue
@@ -206,6 +207,7 @@ fun buildV2RayConfig(
 
         dns = DnsObject().apply {
             hosts = DataStore.hosts.split("\n")
+                .filter { it.isNotBlank() }
                 .associate { it.substringBefore(" ") to it.substringAfter(" ") }
                 .toMutableMap()
             servers = mutableListOf()
@@ -377,7 +379,7 @@ fun buildV2RayConfig(
             if (DataStore.bypassLan && DataStore.bypassLanInCoreOnly) {
                 rules.add(RoutingObject.RuleObject().apply {
                     type = "field"
-                    outboundTag = TAG_DIRECT
+                    outboundTag = TAG_BYPASS
                     ip = listOf("geoip:private")
                 })
             }
@@ -959,7 +961,7 @@ fun buildV2RayConfig(
                     }
                     else -> outboundTag = when (val outId = rule.outbound) {
                         0L -> tagProxy
-                        -1L -> TAG_DIRECT
+                        -1L -> TAG_BYPASS
                         -2L -> TAG_BLOCK
                         else -> if (outId == proxy.id) tagProxy else tagMap[outId]
                     }
@@ -993,8 +995,8 @@ fun buildV2RayConfig(
 
         }
 
-        outbounds.add(OutboundObject().apply {
-            tag = TAG_DIRECT
+        for (freedom in arrayOf(TAG_DIRECT, TAG_BYPASS)) outbounds.add(OutboundObject().apply {
+            tag = freedom
             protocol = "freedom"
             settings = LazyOutboundConfigurationObject(
                 this,
@@ -1012,36 +1014,7 @@ fun buildV2RayConfig(
         outbounds.add(OutboundObject().apply {
             tag = TAG_BLOCK
             protocol = "blackhole"
-
-            settings = LazyOutboundConfigurationObject(
-                this,
-                BlackholeOutboundConfigurationObject().apply {
-                    response = BlackholeOutboundConfigurationObject.ResponseObject().apply {
-                        type = "http"
-                    }
-                })
         })
-
-        val bypassIP = HashSet<String>()
-        val bypassDomain = HashSet<String>()
-
-        (proxies + extraProxies.values.flatten()).filter { !it.requireBean().isChain }.forEach {
-            it.requireBean().apply {
-                if (!serverAddress.isIpAddress()) {
-                    bypassDomain.add("full:$serverAddress")
-                } else {
-                    bypassIP.add(serverAddress)
-                }
-            }
-        }
-
-        if (bypassIP.isNotEmpty()) {
-            routing.rules.add(0, RoutingObject.RuleObject().apply {
-                type = "field"
-                ip = bypassIP.toList()
-                outboundTag = TAG_DIRECT
-            })
-        }
 
         inbounds.add(InboundObject().apply {
             tag = TAG_DNS_IN
@@ -1084,7 +1057,6 @@ fun buildV2RayConfig(
                 })
         })
 
-
         for (dns in remoteDns) {
             if (!dns.isIpAddress()) continue
             routing.rules.add(0, RoutingObject.RuleObject().apply {
@@ -1104,27 +1076,41 @@ fun buildV2RayConfig(
             })
         }
 
-        if (enableDnsRouting) {
-            for (bypassRule in extraRules.filter { it.isBypassRule() }) {
-                if (bypassRule.domains.isNotBlank()) {
-                    bypassDomain.addAll(bypassRule.domains.split("\n"))
-                } else if (bypassRule.ip.isNotBlank()) {
-                    bypassIP.addAll(bypassRule.ip.split("\n"))
+        val bypassIP = HashSet<String>()
+        val bypassDomain = HashSet<String>()
+
+        (proxies + extraProxies.values.flatten()).filter { !it.requireBean().isChain }.forEach {
+            it.requireBean().apply {
+                if (!serverAddress.isIpAddress()) {
+                    bypassDomain.add("full:$serverAddress")
+                } else {
+                    bypassIP.add(serverAddress)
                 }
             }
         }
 
-        if (bypassIP.isNotEmpty() || bypassDomain.isNotEmpty()) {
+        if (bypassIP.isNotEmpty()) {
+            routing.rules.add(0, RoutingObject.RuleObject().apply {
+                type = "field"
+                ip = bypassIP.toList()
+                outboundTag = TAG_DIRECT
+            })
+        }
+
+        if (enableDnsRouting) {
+            for (bypassRule in extraRules.filter { it.isBypassRule() }) {
+                if (bypassRule.domains.isNotBlank()) {
+                    bypassDomain.addAll(bypassRule.domains.split("\n"))
+                }
+            }
+        }
+
+        if (bypassDomain.isNotEmpty()) {
             dns.servers.addAll(directDNS.map {
                 DnsObject.StringOrServerObject().apply {
                     valueY = DnsObject.ServerObject().apply {
                         address = it
-                        if (bypassIP.isNotEmpty()) {
-                            expectIPs = bypassIP.toList()
-                        }
-                        if (bypassDomain.isNotEmpty()) {
-                            domains = bypassDomain.toList()
-                        }
+                        domains = bypassDomain.toList()
                         skipFallback = true
                     }
                 }
@@ -1192,7 +1178,7 @@ fun buildV2RayConfig(
             outboundTags,
             outboundTagsCurrent,
             outboundTagsAll,
-            TAG_DIRECT,
+            TAG_BYPASS,
             !it.api?.services.isNullOrEmpty(),
             it.observatory?.subjectSelector ?: HashSet(),
             uidMap

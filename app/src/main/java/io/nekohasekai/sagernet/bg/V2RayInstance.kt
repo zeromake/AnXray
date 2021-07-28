@@ -152,7 +152,9 @@ open class V2RayInstance(val profile: ProxyEntity) {
                                 )
                             }
                             else -> {
-                                externalInstances[port] = ExternalInstance(profile, port)
+                                externalInstances[port] = ExternalInstance(v2rayPoint.supportSet, profile, port).apply {
+                                    init()
+                                }
                             }
                         }
                     }

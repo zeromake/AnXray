@@ -37,3 +37,9 @@
 [submodule "external/Xray-core"]
 	path = external/Xray-core
 	url = https://github.com/XTLS/Xray-core
+[submodule "external/netty"]
+	path = external/netty
+	url = https://github.com/netty/netty
+[submodule "external/netty-jni-util"]
+	path = external/netty-jni-util
+	url = https://github.com/netty/netty-jni-util
