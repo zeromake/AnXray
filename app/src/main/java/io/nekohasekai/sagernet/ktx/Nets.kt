@@ -120,7 +120,7 @@ fun mkPort(): Int {
 }
 
 fun ByteBuf.toByteArray(): ByteArray {
-    if (this is UnpooledDirectByteBuf) {
+    if (!hasArray()) {
         return Unpooled.copiedBuffer(this).array()
     }
     return array()

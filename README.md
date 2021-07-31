@@ -19,7 +19,7 @@ The X-style logo, slogan, and exclusive bright & dark themes designed by [RPRX](
 
 <img src="https://github.com/XTLS/AnXray/raw/img/screenshots/4.jpg" width="270"> <img src="https://github.com/XTLS/AnXray/raw/img/screenshots/5.jpg" width="270"> <img src="https://github.com/XTLS/AnXray/raw/img/screenshots/6.jpg" width="270">
 
-## DOCUMENTS
+## Documents
 
 https://anxray.org
 
@@ -64,7 +64,7 @@ The application is designed to be used whenever possible.
 * Reverse proxy
 * Custom config (Xray / Trojan-Go)
 
-## OPEN SOURCE LICENSES
+## Credits
 
 <ul>
     <li><a href="https://github.com/shadowsocks/shadowsocks-android">shadowsocks/shadowsocks-android</a>: <code>GPL 3.0</code></li>
@@ -76,7 +76,7 @@ The application is designed to be used whenever possible.
     <li><a href="https://github.com/txthinking/brook/blob/master/LICENSE">txthinking/brook</a>:  <code>GPL 3.0</code></li>
 </ul>
 
-## LICENSE
+## License
 
 ```
 Copyright (C) 2021 by nekohasekai <sekai@neko.services>
