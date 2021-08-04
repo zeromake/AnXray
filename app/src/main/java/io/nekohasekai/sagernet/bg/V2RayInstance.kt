@@ -23,7 +23,6 @@ package io.nekohasekai.sagernet.bg
 
 import android.os.Build
 import android.os.SystemClock
-import android.system.Os
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -393,9 +392,9 @@ open class V2RayInstance(val profile: ProxyEntity) {
         if (config.requireWs) {
             val wsPort = mkPort()
             wsUrl = "http://$LOCALHOST:$wsPort/"
-            Os.setenv("XRAY_BROWSER_DIALER", "$LOCALHOST:$wsPort", true)
+            Libv2ray.setenv("XRAY_BROWSER_DIALER", "$LOCALHOST:$wsPort")
         } else {
-            Os.unsetenv("XRAY_BROWSER_DIALER")
+            Libv2ray.unsetenv("XRAY_BROWSER_DIALER")
         }
 
         v2rayPoint.runLoop(DataStore.ipv6Mode >= IPv6Mode.PREFER)
