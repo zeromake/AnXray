@@ -40,7 +40,6 @@ import go.Seq
 import io.nekohasekai.sagernet.bg.SagerConnection
 import io.nekohasekai.sagernet.database.DataStore
 import io.nekohasekai.sagernet.database.SagerDatabase
-import io.nekohasekai.sagernet.ktx.Logs
 import io.nekohasekai.sagernet.ktx.app
 import io.nekohasekai.sagernet.ktx.checkMT
 import io.nekohasekai.sagernet.ktx.runOnMainDispatcher
@@ -65,6 +64,8 @@ class SagerNet : Application(),
         application = this
     }
 
+    val externalAssets by lazy { getExternalFilesDir(null) ?: filesDir }
+
     override fun onCreate() {
         super.onCreate()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -80,6 +81,7 @@ class SagerNet : Application(),
         Seq.setContext(this)
         val externalAssets = getExternalFilesDir(null) ?: filesDir
         Libv2ray.setAssetsPath(externalAssets.absolutePath, "v2ray/")
+        Libv2ray.setenv("v2ray.conf.geoloader", "memconservative")
 
         runOnMainDispatcher {
             externalAssets.mkdirs()

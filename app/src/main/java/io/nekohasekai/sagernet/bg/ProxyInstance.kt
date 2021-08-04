@@ -41,6 +41,8 @@ import io.nekohasekai.sagernet.ktx.*
 import io.nekohasekai.sagernet.utils.DirectBoot
 import kotlinx.coroutines.*
 import libv2ray.Libv2ray
+import org.tukaani.xz.XZInputStream
+import java.io.File
 import java.io.IOException
 
 
@@ -60,6 +62,34 @@ class ProxyInstance(profile: ProxyEntity, val service: BaseService.Interface) : 
     }
 
     override fun init() {
+        val geoip = File(app.externalAssets, "geoip.dat")
+        if (!geoip.isFile) {
+            XZInputStream(app.assets.open("v2ray/geoip.dat.xz")).use { input ->
+                geoip.outputStream().use {
+                    input.copyTo(it)
+                }
+            }
+            app.assets.open("v2ray/geoip.version.txt").use {  input ->
+                File(app.externalAssets, "geoip.version.txt").outputStream().use {
+                    input.copyTo(it)
+                }
+            }
+        }
+
+        val geosite = File(app.externalAssets, "geosite.dat")
+        if (!geosite.isFile) {
+            XZInputStream(app.assets.open("v2ray/geosite.dat.xz")).use { input ->
+                geosite.outputStream().use {
+                    input.copyTo(it)
+                }
+            }
+            app.assets.open("v2ray/geosite.version.txt").use {  input ->
+                File(app.externalAssets, "geosite.version.txt").outputStream().use {
+                    input.copyTo(it)
+                }
+            }
+        }
+
         super.init()
 
         Logs.d(config.config)

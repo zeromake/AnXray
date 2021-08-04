@@ -38,6 +38,7 @@ object TypeMap : HashMap<String, Int>() {
         this["rb"] = ProxyEntity.TYPE_RELAY_BATON
         this["brook"] = ProxyEntity.TYPE_BROOK
         this["config"] = ProxyEntity.TYPE_CONFIG
+        this["hysteria"] = ProxyEntity.TYPE_HYSTERIA
     }
 
     val reversed = HashMap<Int, String>()

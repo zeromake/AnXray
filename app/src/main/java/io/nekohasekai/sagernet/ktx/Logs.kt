@@ -34,25 +34,25 @@ object Logs {
 
     fun v(message: String) {
         //  if (BuildConfig.DEBUG) {
-            Log.v(mkTag(), message)
+        Log.v(mkTag(), message)
 //        }
     }
 
     fun v(message: String, exception: Throwable) {
         //  if (BuildConfig.DEBUG) {
-            Log.v(mkTag(), message, exception)
+        Log.v(mkTag(), message, exception)
 //        }
     }
 
     fun d(message: String) {
         //  if (BuildConfig.DEBUG) {
-            Log.d(mkTag(), message)
+        Log.d(mkTag(), message)
 //        }
     }
 
     fun d(message: String, exception: Throwable) {
         //  if (BuildConfig.DEBUG) {
-            Log.d(mkTag(), message, exception)
+        Log.d(mkTag(), message, exception)
 //        }
     }
 

@@ -208,6 +208,10 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var serverAllowInsecure by profileCacheStore.boolean(Key.SERVER_ALLOW_INSECURE)
     var serverMultiMode by profileCacheStore.boolean(Key.SERVER_MULTI_MODE)
 
+    var serverAuthType by profileCacheStore.stringToInt(Key.SERVER_AUTH_TYPE)
+    var serverUploadSpeed by profileCacheStore.stringToInt(Key.SERVER_UPLOAD_SPEED)
+    var serverDownloadSpeed by profileCacheStore.stringToInt(Key.SERVER_DOWNLOAD_SPEED)
+
     var balancerType by profileCacheStore.stringToInt(Key.BALANCER_TYPE)
     var balancerGroup by profileCacheStore.stringToLong(Key.BALANCER_GROUP)
     var balancerStrategy by profileCacheStore.string(Key.BALANCER_STRATEGY)
