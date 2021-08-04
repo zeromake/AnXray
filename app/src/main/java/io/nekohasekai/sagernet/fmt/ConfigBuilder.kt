@@ -182,8 +182,7 @@ fun buildV2RayConfig(
                     listen = LOCALHOST
                     port = uidPort
                     protocol = "socks"
-                    settings = LazyInboundConfigurationObject(
-                        this,
+                    settings = LazyInboundConfigurationObject(this,
                         SocksInboundConfigurationObject().apply {
                             auth = "noauth"
                             udp = true
@@ -264,8 +263,7 @@ fun buildV2RayConfig(
             listen = bind
             port = DataStore.socksPort
             protocol = "socks"
-            settings = LazyInboundConfigurationObject(
-                this,
+            settings = LazyInboundConfigurationObject(this,
                 SocksInboundConfigurationObject().apply {
                     auth = "noauth"
                     udp = true
@@ -290,8 +288,7 @@ fun buildV2RayConfig(
                 listen = bind
                 port = if (forTest) testPort else DataStore.httpPort
                 protocol = "http"
-                settings = LazyInboundConfigurationObject(
-                    this,
+                settings = LazyInboundConfigurationObject(this,
                     HTTPInboundConfigurationObject().apply {
                         allowTransparent = true
                         userLevel = 8
@@ -316,8 +313,7 @@ fun buildV2RayConfig(
                 listen = bind
                 port = DataStore.transproxyPort
                 protocol = "dokodemo-door"
-                settings = LazyInboundConfigurationObject(
-                    this,
+                settings = LazyInboundConfigurationObject(this,
                     DokodemoDoorInboundConfigurationObject().apply {
                         network = "tcp,udp"
                         followRedirect = true
@@ -458,14 +454,14 @@ fun buildV2RayConfig(
                     chainMap[localPort] = proxyEntity
                     currentOutbound.apply {
                         protocol = "socks"
-                        settings = LazyOutboundConfigurationObject(this,
+                        settings = LazyOutboundConfigurationObject(
+                            this,
                             SocksOutboundConfigurationObject().apply {
-                                servers = listOf(
-                                    SocksOutboundConfigurationObject.ServerObject()
-                                        .apply {
-                                            address = LOCALHOST
-                                            port = localPort
-                                        })
+                                servers = listOf(SocksOutboundConfigurationObject.ServerObject()
+                                    .apply {
+                                        address = LOCALHOST
+                                        port = localPort
+                                    })
                             })
                     }
                 } else {
@@ -770,90 +766,91 @@ fun buildV2RayConfig(
                             }
                         }
                     }
+                }
 
-                    currentOutbound.tag = tagIn
+                currentOutbound.tag = tagIn
 
-                    if (!isBalancer && index > 0) {
-                        if (!pastExternal) {
-                            pastOutbound.proxySettings = OutboundObject.ProxySettingsObject()
-                                .apply {
-                                    tag = tagIn
-                                    transportLayer = true
-                                }
-                        } else {
-                            routing.rules.add(RoutingObject.RuleObject().apply {
-                                type = "field"
-                                inboundTag = listOf(pastInboundTag)
-                                outboundTag = tagIn
-                            })
+                if (!isBalancer && index > 0) {
+                    if (!pastExternal) {
+                        pastOutbound.proxySettings = OutboundObject.ProxySettingsObject().apply {
+                                tag = tagIn
+                                transportLayer = true
+                            }
+                    } else {
+                        routing.rules.add(RoutingObject.RuleObject().apply {
+                            type = "field"
+                            inboundTag = listOf(pastInboundTag)
+                            outboundTag = tagIn
+                        })
+                    }
+                }
+
+                if (proxyEntity.needExternal() && !isBalancer && index != profileList.lastIndex) {
+                    val mappingPort = mkPort()
+                    when (bean) {
+                        is BrookBean -> {
+                            dns.hosts[bean.serverAddress] = LOCALHOST
+                        }
+                        else -> {
+                            bean.finalAddress = LOCALHOST
                         }
                     }
+                    bean.finalPort = mappingPort
+                    bean.isChain = true
 
-                    if (proxyEntity.needExternal() && !isBalancer && index != profileList.lastIndex) {
-                        val mappingPort = mkPort()
-                        when (bean) {
-                            is BrookBean -> {
-                                dns.hosts[bean.serverAddress] = LOCALHOST
-                            }
-                            else -> {
-                                bean.finalAddress = LOCALHOST
-                            }
-                        }
-                        bean.finalPort = mappingPort
-                        bean.isChain = true
-
-                        inbounds.add(InboundObject().apply {
-                            listen = LOCALHOST
-                            port = mappingPort
-                            tag = "$tagOutbound-mapping-${proxyEntity.id}"
-                            protocol = "dokodemo-door"
-                            settings = LazyInboundConfigurationObject(this,
-                                DokodemoDoorInboundConfigurationObject().apply {
-                                    address = bean.serverAddress
-                                    network = "tcp,udp"
-                                    port = bean.serverPort
-                                })
-
-                            pastInboundTag = tag
-                        })
-                    } else if (bean.canMapping() && proxyEntity.needExternal() && needIncludeSelf) {
-                        val mappingPort = mkPort()
-                        when (bean) {
-                            is BrookBean -> {
-                                dns.hosts[bean.serverAddress] = LOCALHOST
-                            }
-                            else -> {
-                                bean.finalAddress = LOCALHOST
-                            }
-                        }
-                        bean.finalPort = mappingPort
-
-                        inbounds.add(InboundObject().apply {
-                            listen = LOCALHOST
-                            port = mappingPort
-                            tag = "$tagOutbound-mapping-${proxyEntity.id}"
-                            protocol = "dokodemo-door"
-                            settings = LazyInboundConfigurationObject(this,
-                                DokodemoDoorInboundConfigurationObject().apply {
-                                    address = bean.serverAddress
-                                    network = "tcp,udp"
-                                    port = bean.serverPort
-                                })
-                            routing.rules.add(RoutingObject.RuleObject().apply {
-                                type = "field"
-                                inboundTag = listOf(tag)
-                                outboundTag = TAG_DIRECT
+                    inbounds.add(InboundObject().apply {
+                        listen = LOCALHOST
+                        port = mappingPort
+                        tag = "$tagOutbound-mapping-${proxyEntity.id}"
+                        protocol = "dokodemo-door"
+                        settings = LazyInboundConfigurationObject(
+                            this,
+                            DokodemoDoorInboundConfigurationObject().apply {
+                                address = bean.serverAddress
+                                network = "tcp,udp"
+                                port = bean.serverPort
                             })
-                        })
 
+                        pastInboundTag = tag
+                    })
+                } else if (bean.canMapping() && proxyEntity.needExternal() && needIncludeSelf) {
+                    val mappingPort = mkPort()
+                    when (bean) {
+                        is BrookBean -> {
+                            dns.hosts[bean.serverAddress] = LOCALHOST
+                        }
+                        else -> {
+                            bean.finalAddress = LOCALHOST
+                        }
                     }
+                    bean.finalPort = mappingPort
 
-                    outbounds.add(currentOutbound)
-                    chainOutbounds.add(currentOutbound)
-                    pastExternal = proxyEntity.needExternal()
-                    pastOutbound = currentOutbound
+                    inbounds.add(InboundObject().apply {
+                        listen = LOCALHOST
+                        port = mappingPort
+                        tag = "$tagOutbound-mapping-${proxyEntity.id}"
+                        protocol = "dokodemo-door"
+                        settings = LazyInboundConfigurationObject(
+                            this,
+                            DokodemoDoorInboundConfigurationObject().apply {
+                                address = bean.serverAddress
+                                network = "tcp,udp"
+                                port = bean.serverPort
+                            })
+                        routing.rules.add(RoutingObject.RuleObject().apply {
+                            type = "field"
+                            inboundTag = listOf(tag)
+                            outboundTag = TAG_DIRECT
+                        })
+                    })
 
                 }
+
+                outbounds.add(currentOutbound)
+                chainOutbounds.add(currentOutbound)
+                pastExternal = proxyEntity.needExternal()
+                pastOutbound = currentOutbound
+
             }
 
             if (isBalancer) {
@@ -889,8 +886,7 @@ fun buildV2RayConfig(
                     }
                     outbounds.add(0, OutboundObject().apply {
                         protocol = "loopback"
-                        settings = LazyOutboundConfigurationObject(
-                            this,
+                        settings = LazyOutboundConfigurationObject(this,
                             LoopbackOutboundConfigurationObject().apply {
                                 inboundTag = TAG_SOCKS
                             })
@@ -967,7 +963,8 @@ fun buildV2RayConfig(
                 outbounds.add(OutboundObject().apply {
                     tag = "reverse-out-${rule.id}"
                     protocol = "freedom"
-                    settings = LazyOutboundConfigurationObject(this,
+                    settings = LazyOutboundConfigurationObject(
+                        this,
                         FreedomOutboundConfigurationObject().apply {
                             redirect = rule.redirect
                         })
@@ -993,7 +990,8 @@ fun buildV2RayConfig(
         for (freedom in arrayOf(TAG_DIRECT, TAG_BYPASS)) outbounds.add(OutboundObject().apply {
             tag = freedom
             protocol = "freedom"
-            settings = LazyOutboundConfigurationObject(this,
+            settings = LazyOutboundConfigurationObject(
+                this,
                 FreedomOutboundConfigurationObject().apply {
                     when (ipv6Mode) {
                         IPv6Mode.DISABLE -> domainStrategy = "UseIPv4"
@@ -1015,7 +1013,8 @@ fun buildV2RayConfig(
             listen = LOCALHOST
             port = DataStore.localDNSPort
             protocol = "dokodemo-door"
-            settings = LazyInboundConfigurationObject(this,
+            settings = LazyInboundConfigurationObject(
+                this,
                 DokodemoDoorInboundConfigurationObject().apply {
                     address = if (!remoteDns.first().isIpAddress()) {
                         "1.0.0.1"
@@ -1030,7 +1029,8 @@ fun buildV2RayConfig(
         outbounds.add(OutboundObject().apply {
             protocol = "dns"
             tag = TAG_DNS_OUT
-            settings = LazyOutboundConfigurationObject(this,
+            settings = LazyOutboundConfigurationObject(
+                this,
                 DNSOutboundConfigurationObject().apply {
                     var dns = remoteDns.first()
                     if (dns.contains(":")) {
@@ -1146,7 +1146,8 @@ fun buildV2RayConfig(
                 listen = LOCALHOST
                 port = apiPort
                 tag = TAG_API_IN
-                settings = LazyInboundConfigurationObject(this,
+                settings = LazyInboundConfigurationObject(
+                    this,
                     DokodemoDoorInboundConfigurationObject().apply {
                         address = LOCALHOST
                         port = apiPort
@@ -1221,8 +1222,7 @@ fun buildCustomConfig(proxy: ProxyEntity, port: Int): V2rayBuildResult {
             listen = bind
             this.port = port
             protocol = "socks"
-            settings = LazyInboundConfigurationObject(
-                this,
+            settings = LazyInboundConfigurationObject(this,
                 SocksInboundConfigurationObject().apply {
                     auth = "noauth"
                     udp = true
