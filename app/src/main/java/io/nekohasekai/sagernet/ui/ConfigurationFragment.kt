@@ -588,7 +588,11 @@ class ConfigurationFragment @JvmOverloads constructor(
                     profilesUnfiltered = profilesUnfiltered.filter { it.requireBean().group in subscription.selectedGroups }
                 }
                 if (subscription.selectedTags.isNotEmpty()) {
-                    profilesUnfiltered = profilesUnfiltered.filter { profile -> profile.requireBean().tags.any { it in subscription.selectedTags } }
+                    profilesUnfiltered = profilesUnfiltered.filter { profile ->
+                        profile.requireBean().tags.containsAll(
+                            subscription.selectedTags
+                        )
+                    }
                 }
             }
             val profiles = ConcurrentLinkedQueue(profilesUnfiltered)
@@ -733,7 +737,11 @@ class ConfigurationFragment @JvmOverloads constructor(
                     profilesUnfiltered = profilesUnfiltered.filter { it.requireBean().group in subscription.selectedGroups }
                 }
                 if (subscription.selectedTags.isNotEmpty()) {
-                    profilesUnfiltered = profilesUnfiltered.filter { profile -> profile.requireBean().tags.any { it in subscription.selectedTags } }
+                    profilesUnfiltered = profilesUnfiltered.filter { profile ->
+                        profile.requireBean().tags.containsAll(
+                            subscription.selectedTags
+                        )
+                    }
                 }
             }
             val profiles = ConcurrentLinkedQueue(profilesUnfiltered)
@@ -1204,7 +1212,11 @@ class ConfigurationFragment @JvmOverloads constructor(
                         newProfiles = newProfiles.filter { it.requireBean().group in subscription.selectedGroups }
                     }
                     if (subscription.selectedTags.isNotEmpty()) {
-                        newProfiles = newProfiles.filter { profile -> profile.requireBean().tags.any { it in subscription.selectedTags } }
+                        newProfiles = newProfiles.filter { profile ->
+                            profile.requireBean().tags.containsAll(
+                                subscription.selectedTags
+                            )
+                        }
                     }
                 }
                 configurationList.clear()
