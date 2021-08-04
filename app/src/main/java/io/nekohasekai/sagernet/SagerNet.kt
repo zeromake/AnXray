@@ -81,7 +81,7 @@ class SagerNet : Application(),
         Seq.setContext(this)
         val externalAssets = getExternalFilesDir(null) ?: filesDir
         Libv2ray.setAssetsPath(externalAssets.absolutePath, "v2ray/")
-        Libv2ray.setenv("v2ray.conf.geoloader", "memconservative")
+//        Libv2ray.setenv("xray.conf.geoloader", "memconservative")
 
         runOnMainDispatcher {
             externalAssets.mkdirs()

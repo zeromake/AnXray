@@ -15,7 +15,7 @@ fun Project.downloadAssets() {
     val downloader = OkHttpClient.Builder().followRedirects(true).followSslRedirects(true).build()
 
     val github = GitHubBuilder().build()
-    val geoip = github.getRepository("v2fly/geoip").latestRelease
+    val geoip = github.getRepository("v2fly/geoip").getReleaseByTagName("202107220025")
     val geoipFile = File(assets, "v2ray/geoip.dat")
     val geoipXzFile = File(assets, "v2ray/geoip.dat.xz")
     val geoipVersion = File(assets, "v2ray/geoip.version.txt")
