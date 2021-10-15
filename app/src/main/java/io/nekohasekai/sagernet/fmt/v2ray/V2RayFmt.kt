@@ -140,6 +140,9 @@ fun parseV2Ray(link: String): StandardV2RayBean {
                 url.queryParameter("flow")?.let {
                     bean.flow = it
                 }
+                url.queryParameter("cert")?.let {
+                    bean.certificates = it
+                }
             }
         }
         when (protocol) {
@@ -435,6 +438,9 @@ fun StandardV2RayBean.toUri(standard: Boolean = true): String {
                 }
                 if (flow.isNotBlank()) {
                     builder.addQueryParameter("flow", flow)
+                }
+                if (certificates.isNotBlank()) {
+                    builder.addQueryParameter("cert", certificates)
                 }
             }
         }
