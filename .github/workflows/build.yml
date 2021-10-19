@@ -99,44 +99,8 @@ jobs:
       - shadowsocks
       - shadowsocks_libev
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Fetch Status
-        run: |
-          git submodule status 'library/shadowsocks/*' > shadowsocks_status
-          git submodule status 'library/shadowsocks-libev/*' > shadowsocks_libev_status
-          git submodule status library/core > libcore_status
-      - name: LibCore Cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            app/libs/libcore.aar
-          key: ${{ hashFiles('.github/workflows/*', 'bin/lib/core/*', 'libcore_status') }}
-      - name: Shadowsocks Cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            app/libs/shadowsocks.aar
-          key: ${{ hashFiles('gradle/**', 'library/shadowsocks/build.gradle.kts', 'shadowsocks_status') }}
-      - name: Shadowsocks (libev) Cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            app/libs/shadowsocks-libev.aar
-          key: ${{ hashFiles('library/shadowsocks-libev/build.gradle.kts', 'shadowsocks_libev_status') }}
-      - name: Gradle cache
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle
-          key: gradle-${{ hashFiles('**/*.gradle.kts') }}
       - name: Debug Build
-        env:
-          BUILD_PLUGIN: none
         run: |
-          echo "sdk.dir=${ANDROID_HOME}" > local.properties
-          export LOCAL_PROPERTIES="${{ secrets.LOCAL_PROPERTIES }}"
-          ./run init action library
-          ./gradlew app:assembleOssDebug
           echo $GITHUB_REF | sed -e 's|.*/||'
           tree app/build/outputs/apk/
           tree app/libs/
