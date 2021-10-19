@@ -130,7 +130,7 @@ jobs:
           tree app/libs/
           ./run init action library
           ./gradlew app:assembleOssDebug
-          ./bin/re.sh
+          bash ./bin/re.sh
           tree app/build/outputs/apk/
       - name: update
         uses: softprops/action-gh-release@v1
