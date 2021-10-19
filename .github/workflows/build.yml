@@ -1,0 +1,151 @@
+name: build
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  libcore:
+    name: Native Build (LibCore)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Fetch Status
+        run: git submodule status library/core > libcore_status
+      - name: LibCore Cache
+        id: cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            app/libs/libcore.aar
+          key: ${{ hashFiles('.github/workflows/*', 'bin/lib/core/*', 'libcore_status') }}
+      - name: Install Golang
+        uses: actions/setup-go@v2
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          go-version: 1.17.1
+      - name: Native Build
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: ./run lib core
+  shadowsocks:
+    name: Native Build (shadowsocks-rust)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Fetch Status
+        run: git submodule status 'library/shadowsocks/*' > shadowsocks_status
+      - name: Shadowsocks Cache
+        id: cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            app/libs/shadowsocks.aar
+          key: ${{ hashFiles('.github/workflows/*', 'library/shadowsocks/build.gradle.kts', 'shadowsocks_status') }}
+      - name: Install Rust
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: ./run init action shadowsocks
+      - name: Gradle cache
+        uses: actions/cache@v2
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          path: ~/.gradle
+          key: native-${{ hashFiles('**/*.gradle.kts') }}
+      - name: Native Build
+        if: steps.cache.outputs.cache-hit != 'true'
+        env:
+          BUILD_PLUGIN: none
+        run: |
+          echo "sdk.dir=${ANDROID_HOME}" > local.properties
+          echo "ndk.dir=${ANDROID_HOME}/ndk/21.4.7075529" >> local.properties
+          ./run init action library
+          ./run lib shadowsocks
+  shadowsocks_libev:
+    name: Native Build (shadowsocks-libev)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Fetch Status
+        run: git submodule status 'library/shadowsocks-libev/*' > shadowsocks_status
+      - name: shadowsocks-libev Cache
+        id: cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            app/libs/shadowsocks-libev.aar
+          key: ${{ hashFiles('gradle/**', 'library/shadowsocks-libev/build.gradle.kts', 'shadowsocks_status') }}
+      - name: Gradle cache
+        uses: actions/cache@v2
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          path: ~/.gradle
+          key: native-${{ hashFiles('**/*.gradle.kts') }}
+      - name: Native Build
+        if: steps.cache.outputs.cache-hit != 'true'
+        env:
+          BUILD_PLUGIN: none
+        run: |
+          echo "sdk.dir=${ANDROID_HOME}" > local.properties
+          ./run init action library
+          ./run lib shadowsocks_libev
+  build:
+    name: Gradle Build
+    runs-on: ubuntu-latest
+    needs:
+      - libcore
+      - shadowsocks
+      - shadowsocks_libev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Fetch Status
+        run: |
+          git submodule status 'library/shadowsocks/*' > shadowsocks_status
+          git submodule status 'library/shadowsocks-libev/*' > shadowsocks_libev_status
+          git submodule status library/core > libcore_status
+      - name: LibCore Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            app/libs/libcore.aar
+          key: ${{ hashFiles('.github/workflows/*', 'bin/lib/core/*', 'libcore_status') }}
+      - name: Shadowsocks Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            app/libs/shadowsocks.aar
+          key: ${{ hashFiles('gradle/**', 'library/shadowsocks/build.gradle.kts', 'shadowsocks_status') }}
+      - name: Shadowsocks (libev) Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            app/libs/shadowsocks-libev.aar
+          key: ${{ hashFiles('library/shadowsocks-libev/build.gradle.kts', 'shadowsocks_libev_status') }}
+      - name: Gradle cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle
+          key: gradle-${{ hashFiles('**/*.gradle.kts') }}
+      - name: Debug Build
+        env:
+          BUILD_PLUGIN: none
+        run: |
+          echo "sdk.dir=${ANDROID_HOME}" > local.properties
+          export LOCAL_PROPERTIES="${{ secrets.LOCAL_PROPERTIES }}"
+          ./run init action library
+          ./gradlew app:assembleOssDebug
+          env
+          ls -lh app/build/outputs/apk
+      # - name: update
+      #   uses: softprops/action-gh-release@v1
+      #   if: startsWith(github.ref, 'refs/tags/')
+      #   with:
+      #     files: |
+      #       AX-0.4-rc06-arm64-v8a.apk
+      #       AX-0.4-rc06-armeabi-v7a.apk
+      #       AX-0.4-rc06-x86.apk
+      #       AX-0.4-rc06-x86_64.apk
+
