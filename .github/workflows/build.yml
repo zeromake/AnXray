@@ -126,16 +126,18 @@ jobs:
           key: ${{ hashFiles('library/shadowsocks-libev/build.gradle.kts', 'shadowsocks_libev_status') }}
       - name: Debug Build
         run: |
-          echo $GITHUB_REF | sed -e 's|.*/||'
-          tree app/build/outputs/apk/
+          echo "sdk.dir=${ANDROID_HOME}" > local.properties
           tree app/libs/
+          ./run init action library
+          ./gradlew app:assembleOssDebug
+          tree app/build/outputs/apk/
+          echo $GITHUB_REF | sed -e 's|.*/||'
       # - name: update
       #   uses: softprops/action-gh-release@v1
       #   if: startsWith(github.ref, 'refs/tags/')
       #   with:
       #     files: |
-      #       AX-0.4-rc06-arm64-v8a.apk
-      #       AX-0.4-rc06-armeabi-v7a.apk
-      #       AX-0.4-rc06-x86.apk
-      #       AX-0.4-rc06-x86_64.apk
+      #       app/libs/libcore.aar
+      #       app/libs/shadowsocks.aar
+      #       app/libs/shadowsocks-libev.aar
 
