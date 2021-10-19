@@ -137,8 +137,9 @@ jobs:
           export LOCAL_PROPERTIES="${{ secrets.LOCAL_PROPERTIES }}"
           ./run init action library
           ./gradlew app:assembleOssDebug
-          env
-          ls -lh app/build/outputs/apk
+          echo $GITHUB_REF | sed -e 's|.*/||'
+          tree app/build/outputs/apk/
+          tree app/libs/
       # - name: update
       #   uses: softprops/action-gh-release@v1
       #   if: startsWith(github.ref, 'refs/tags/')
