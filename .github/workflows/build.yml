@@ -127,6 +127,7 @@ jobs:
       - name: Debug Build
         run: |
           echo "sdk.dir=${ANDROID_HOME}" > local.properties
+          mkdir -p ~/.android && cp ./bin/debug.keystore ~/.android/debug.keystore
           tree app/libs/
           ./run init action library
           ./gradlew app:assembleOssDebug
